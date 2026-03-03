@@ -1,0 +1,415 @@
+---
+title: Docker Setup
+description: Run and deploy Mizen using Docker
+---
+
+## Overview
+
+Mizen includes Docker support for containerized deployment. While the project doesn't currently include a complete Dockerfile in the repository, this guide shows you how to run Mizen with Docker.
+
+## Prerequisites
+
+- [Docker](https://docs.docker.com/get-docker/) installed and running
+- [Docker Compose](https://docs.docker.com/compose/install/) (optional, for multi-container setups)
+- Basic understanding of Docker concepts
+
+## Quick Start with Docker
+
+The project includes npm scripts for common Docker operations:
+
+<CodeGroup>
+  ```bash Build Docker Image
+  npm run docker:build
+  ```
+
+  ```bash Run Docker Container
+  npm run docker:run
+  ```
+</CodeGroup>
+
+## Docker Build
+
+The `docker:build` script builds a Docker image named `parse-n-plate`:
+
+```bash
+npm run docker:build
+```
+
+This is equivalent to running:
+
+```bash
+docker build -t parse-n-plate .
+```
+
+## Docker Run
+
+The `docker:run` script runs the container with environment variables:
+
+```bash
+npm run docker:run
+```
+
+This is equivalent to:
+
+```bash
+docker run -p 3000:3000 --env-file .env.local recipe-app
+```
+
+### What This Does
+
+- **`-p 3000:3000`** - Maps port 3000 from the container to port 3000 on your host
+- **`--env-file .env.local`** - Loads environment variables from `.env.local`
+- **`recipe-app`** - The name of the container to run
+
+## Creating a Dockerfile
+
+If you need to create a Dockerfile for your project, here's a recommended Next.js Dockerfile:
+
+```dockerfile Dockerfile
+# Stage 1: Install dependencies
+FROM node:24.4.1-alpine AS deps
+WORKDIR /app
+
+# Copy package files
+COPY package.json package-lock.json* ./
+
+# Install dependencies
+RUN npm ci
+
+# Stage 2: Build the application
+FROM node:24.4.1-alpine AS builder
+WORKDIR /app
+
+# Copy dependencies from deps stage
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+
+# Build the Next.js application
+RUN npm run build
+
+# Stage 3: Run the application
+FROM node:24.4.1-alpine AS runner
+WORKDIR /app
+
+ENV NODE_ENV production
+
+# Create non-root user
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+# Copy built application
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+
+# Set correct permissions
+RUN chown -R nextjs:nodejs /app
+
+USER nextjs
+
+EXPOSE 3000
+
+ENV PORT 3000
+ENV HOSTNAME "0.0.0.0"
+
+CMD ["node", "server.js"]
+```
+
+## Docker Ignore
+
+The project includes a `.dockerignore` file to exclude unnecessary files from the Docker build context:
+
+```plaintext .dockerignore
+node_modules
+.next
+.git
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env
+```
+
+<Note>
+Environment files are excluded from the Docker image for security. You must provide them at runtime using `--env-file` or environment variable flags.
+</Note>
+
+## Environment Variables in Docker
+
+There are multiple ways to provide environment variables to Docker containers:
+
+### Method 1: Using `--env-file`
+
+The recommended approach for local development:
+
+```bash
+docker run -p 3000:3000 --env-file .env.local mizen
+```
+
+### Method 2: Individual Environment Variables
+
+Pass variables directly:
+
+```bash
+docker run -p 3000:3000 \
+  -e GROQ_API_KEY=your_key \
+  -e NEXT_PUBLIC_SUPABASE_URL=your_url \
+  -e NEXT_PUBLIC_SUPABASE_ANON_KEY=your_key \
+  mizen
+```
+
+### Method 3: Docker Compose
+
+Create a `docker-compose.yml` file for easier management:
+
+```yaml docker-compose.yml
+version: '3.8'
+
+services:
+  mizen:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env.local
+    restart: unless-stopped
+```
+
+Then run:
+
+<CodeGroup>
+  ```bash Start Services
+  docker-compose up
+  ```
+
+  ```bash Start in Background
+  docker-compose up -d
+  ```
+
+  ```bash Stop Services
+  docker-compose down
+  ```
+
+  ```bash View Logs
+  docker-compose logs -f
+  ```
+</CodeGroup>
+
+## Multi-Stage Build Benefits
+
+The recommended Dockerfile uses a multi-stage build approach:
+
+<CardGroup cols={3}>
+  <Card title="Smaller Image" icon="compress">
+    Only production dependencies and built files are included in the final image.
+  </Card>
+
+  <Card title="Better Security" icon="shield-check">
+    Reduced attack surface by excluding development tools and source code.
+  </Card>
+
+  <Card title="Faster Builds" icon="bolt">
+    Docker caching optimizes rebuild times when dependencies don't change.
+  </Card>
+</CardGroup>
+
+## Production Deployment
+
+### Building for Production
+
+<Steps>
+  <Step title="Build the production image">
+    ```bash
+    docker build -t mizen:latest .
+    ```
+  </Step>
+
+  <Step title="Tag for your registry">
+    ```bash
+    docker tag mizen:latest your-registry.com/mizen:latest
+    ```
+  </Step>
+
+  <Step title="Push to registry">
+    ```bash
+    docker push your-registry.com/mizen:latest
+    ```
+  </Step>
+
+  <Step title="Deploy to your infrastructure">
+    Pull and run the image on your production servers or container orchestration platform.
+  </Step>
+</Steps>
+
+### Health Checks
+
+Add a health check to your Dockerfile:
+
+```dockerfile
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:3000/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
+```
+
+## Common Docker Commands
+
+<AccordionGroup>
+  <Accordion title="View running containers">
+    ```bash
+    docker ps
+    ```
+  </Accordion>
+
+  <Accordion title="View container logs">
+    ```bash
+    docker logs <container-id>
+    
+    # Follow logs in real-time
+    docker logs -f <container-id>
+    ```
+  </Accordion>
+
+  <Accordion title="Execute commands in container">
+    ```bash
+    docker exec -it <container-id> sh
+    ```
+  </Accordion>
+
+  <Accordion title="Stop a container">
+    ```bash
+    docker stop <container-id>
+    ```
+  </Accordion>
+
+  <Accordion title="Remove a container">
+    ```bash
+    docker rm <container-id>
+    ```
+  </Accordion>
+
+  <Accordion title="Remove an image">
+    ```bash
+    docker rmi <image-name>
+    ```
+  </Accordion>
+
+  <Accordion title="Prune unused resources">
+    ```bash
+    # Remove unused containers, networks, and images
+    docker system prune
+    
+    # Remove everything including volumes
+    docker system prune -a --volumes
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Port already in use">
+    **Error**: `Bind for 0.0.0.0:3000 failed: port is already allocated`
+
+    **Solution**: Either stop the process using port 3000 or map to a different port:
+    ```bash
+    docker run -p 3001:3000 --env-file .env.local mizen
+    ```
+  </Accordion>
+
+  <Accordion title="Environment variables not loaded">
+    **Issue**: Application can't access environment variables
+
+    **Solution**:
+    - Verify `.env.local` exists and contains the required variables
+    - Ensure `--env-file` flag points to the correct file
+    - Check file permissions: `chmod 644 .env.local`
+    - For Next.js public variables, ensure they're prefixed with `NEXT_PUBLIC_`
+  </Accordion>
+
+  <Accordion title="Build fails on dependencies">
+    **Error**: `npm ERR! code ENOTFOUND` or similar during build
+
+    **Solution**:
+    - Check your internet connection
+    - Verify `package.json` and `package-lock.json` are present
+    - Try clearing Docker build cache: `docker build --no-cache -t mizen .`
+  </Accordion>
+
+  <Accordion title="Container exits immediately">
+    **Issue**: Container starts but exits right away
+
+    **Solution**:
+    - Check logs: `docker logs <container-id>`
+    - Verify the CMD or ENTRYPOINT in your Dockerfile
+    - Ensure required environment variables are set
+    - Check for application errors in the logs
+  </Accordion>
+</AccordionGroup>
+
+## Docker Compose with Database
+
+If you want to run Mizen with a local database for development:
+
+```yaml docker-compose.yml
+version: '3.8'
+
+services:
+  mizen:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env.local
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: mizen
+      POSTGRES_USER: mizen_user
+      POSTGRES_PASSWORD: secure_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+```
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Use Specific Versions" icon="tag">
+    Always specify exact Node.js versions in your Dockerfile (e.g., `node:24.4.1-alpine`) for reproducible builds.
+  </Card>
+
+  <Card title="Optimize Layer Caching" icon="layer-group">
+    Copy `package.json` before source code so dependency layers are cached when code changes.
+  </Card>
+
+  <Card title="Use Alpine Images" icon="mountain">
+    Alpine-based images are smaller and more secure than standard images.
+  </Card>
+
+  <Card title="Run as Non-Root" icon="user">
+    Always create and use a non-root user in production containers for security.
+  </Card>
+</CardGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Environment Setup" icon="gear" href="/development/environment-setup">
+    Configure environment variables for Docker containers
+  </Card>
+  <Card title="Installation" icon="download" href="/development/installation">
+    Local development setup without Docker
+  </Card>
+</CardGroup>

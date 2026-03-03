@@ -1,0 +1,121 @@
+---
+title: Recipe Parsing
+description: Extract structured recipe data from any website using JSON-LD or AI-powered parsing
+---
+
+Mizen automatically extracts recipe information from URLs using a two-layer parsing approach that prioritizes speed and accuracy.
+
+## How It Works
+
+Mizen uses a unified parsing system that tries multiple extraction methods:
+
+<Steps>
+  <Step title="Enter a recipe URL">
+    Paste any recipe URL into the search bar. You can enter partial URLs like `allrecipes.com/recipe/123` - Mizen automatically adds the protocol.
+  </Step>
+  
+  <Step title="URL validation">
+    Mizen performs a quick validation to ensure the URL contains recipe-related keywords before making a full parsing request.
+  </Step>
+  
+  <Step title="Structured data extraction (JSON-LD)">
+    Mizen first attempts to extract recipe data from JSON-LD structured data embedded in the page. This method is fast and doesn't consume AI tokens.
+    
+    Most major recipe sites (AllRecipes, Serious Eats, Bon Appétit, etc.) include JSON-LD data following the schema.org Recipe format.
+  </Step>
+  
+  <Step title="AI-powered fallback">
+    If JSON-LD data is unavailable or incomplete, Mizen falls back to AI-based parsing. The system:
+    - Fetches and cleans the HTML content
+    - Uses AI vision models to extract recipe structure
+    - Returns consistently formatted data
+  </Step>
+</Steps>
+
+## Extracted Data
+
+Mizen extracts the following information when available:
+
+- **Title** - Recipe name
+- **Ingredients** - Organized by groups (e.g., "For the dough", "For the filling")
+- **Instructions** - Step-by-step cooking directions
+- **Author** - Recipe creator or source
+- **Servings** - Number of servings or yield
+- **Timing** - Prep time, cook time, and total time
+- **Cuisine** - Cuisine type tags (Italian, Thai, etc.)
+- **Summary** - AI-generated recipe overview
+- **Storage** - Storage instructions and shelf life
+- **Plating** - Serving suggestions, vessel recommendations, and temperature
+
+## API Endpoints
+
+The parsing functionality is available at `/home/daytona/workspace/source/src/app/api/parseRecipe/route.ts:49`.
+
+### Request Format
+
+```json
+{
+  "url": "https://example.com/recipe"
+}
+```
+
+### Response Format
+
+```json
+{
+  "success": true,
+  "title": "Recipe Title",
+  "ingredients": [
+    {
+      "groupName": "Main",
+      "ingredients": [
+        {
+          "amount": "1",
+          "units": "cup",
+          "ingredient": "flour"
+        }
+      ]
+    }
+  ],
+  "instructions": ["Step 1", "Step 2"],
+  "method": "json-ld"
+}
+```
+
+<Note>
+The `method` field indicates which parsing method was used: `json-ld` for structured data extraction, or `ai` for AI-based parsing.
+</Note>
+
+## Error Handling
+
+Mizen provides specific error codes for different failure scenarios:
+
+- **ERR_INVALID_URL** - Malformed or missing URL
+- **ERR_NO_RECIPE_FOUND** - No recipe content detected on the page
+- **ERR_RATE_LIMIT** - Too many requests (includes retry-after timestamp)
+- **ERR_TIMEOUT** - Request took too long
+- **ERR_FETCH_FAILED** - Could not connect to the recipe site
+- **ERR_API_UNAVAILABLE** - Parsing service temporarily unavailable
+
+## Supported Websites
+
+Mizen works with any website that includes recipe content. Sites with JSON-LD structured data parse faster and don't consume AI tokens:
+
+- AllRecipes
+- Serious Eats
+- Bon Appétit
+- Food Network
+- NYT Cooking
+- BBC Good Food
+- And thousands more
+
+<Tip>
+For sites without structured data, Mizen automatically uses AI parsing to extract the recipe. This works with blog posts, PDFs converted to HTML, and other non-standard formats.
+</Tip>
+
+## Performance
+
+- **JSON-LD parsing**: ~1-2 seconds
+- **AI parsing**: ~3-5 seconds
+- **Max file size**: No limit (processes HTML only)
+- **Timeout**: 2 minutes per request

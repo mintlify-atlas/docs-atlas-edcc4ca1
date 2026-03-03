@@ -1,0 +1,196 @@
+---
+title: 'Extract Images'
+api: 'POST /api/extractImages'
+description: 'Extracts recipe-related images from a URL'
+---
+
+## Overview
+
+The Extract Images endpoint retrieves up to 3 recipe-related images from a given URL. It prioritizes images from structured data (JSON-LD), recipe-specific selectors, and validates image URLs to filter out logos, icons, and other non-recipe images.
+
+## Request
+
+<ParamField body="url" type="string" required>
+  The URL to extract images from. Must be a valid, well-formed URL string.
+</ParamField>
+
+### Example Request
+
+```bash
+curl -X POST https://yourdomain.com/api/extractImages \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://example.com/recipe/chocolate-chip-cookies"
+  }'
+```
+
+## Response
+
+### Success Response
+
+<ResponseField name="success" type="boolean">
+  Indicates whether the operation was successful.
+</ResponseField>
+
+<ResponseField name="images" type="array">
+  Array of image URLs (up to 3). Each URL is an absolute URL string.
+</ResponseField>
+
+```json
+{
+  "success": true,
+  "images": [
+    "https://example.com/images/chocolate-chip-cookies.jpg",
+    "https://example.com/images/cookies-on-plate.webp"
+  ]
+}
+```
+
+### Error Response
+
+<ResponseField name="success" type="boolean">
+  Always `false` for error responses.
+</ResponseField>
+
+<ResponseField name="error" type="string">
+  Human-readable error message describing what went wrong.
+</ResponseField>
+
+```json
+{
+  "success": false,
+  "error": "URL is required"
+}
+```
+
+## Image Extraction Strategy
+
+The endpoint uses a multi-layered approach to find the best recipe images:
+
+### 1. JSON-LD Structured Data (Highest Priority)
+
+Searches for images in `<script type="application/ld+json">` tags:
+- Looks for `@type: "Recipe"` or `@type: "ImageObject"`
+- Extracts `image` property (supports string, object with `url`, or array)
+- Handles `@graph` structures
+
+### 2. Recipe-Specific Selectors
+
+Searches for images using common recipe image selectors:
+- `img[itemprop="image"]` - Schema.org markup
+- `.recipe-image img`
+- `.recipe-photo img`
+- `.recipe-header img`
+- `article img`
+- `main img`
+
+### 3. Image Validation
+
+Filters images to ensure quality:
+
+**Included images:**
+- Images with common extensions: `.jpg`, `.jpeg`, `.png`, `.webp`, `.gif`, `.svg`
+- Images with CDN patterns: `/image/`, `/img/`, `/photo/`, `/picture/`
+
+**Excluded images:**
+- Logos, icons, avatars, favicons
+- Images matching patterns: `/logo`, `/icon`, `/avatar`, `/favicon`
+
+### 4. URL Normalization
+
+- Converts relative URLs to absolute URLs
+- Handles both `src` and `data-src` attributes
+- Removes duplicates
+- Returns up to 3 images
+
+## Error Handling
+
+The endpoint returns appropriate error messages for various scenarios:
+
+| HTTP Status | Error Message | Cause |
+|-------------|---------------|-------|
+| 400 | "URL is required" | Missing or invalid URL parameter |
+| 400 | "Invalid URL format" | Malformed URL string |
+| 404-5xx | "Failed to fetch URL: {status}" | HTTP error from target server |
+| 500 | Error message | Timeout, network error, or unexpected error |
+
+### Error Response Examples
+
+**Missing URL:**
+```json
+{
+  "success": false,
+  "error": "URL is required"
+}
+```
+
+**Invalid URL format:**
+```json
+{
+  "success": false,
+  "error": "Invalid URL format"
+}
+```
+
+**Failed to fetch:**
+```json
+{
+  "success": false,
+  "error": "Failed to fetch URL: 404"
+}
+```
+
+## Configuration
+
+- **Timeout**: 10 seconds (using AbortController)
+- **Maximum images**: 3
+- **User-Agent**: Simulates Chrome 115 browser
+- **Accepted content**: HTML, XHTML, XML, images
+- **Accepted languages**: English (en-US, en)
+
+## Implementation Notes
+
+- Uses native `fetch` API with `AbortController` for timeout handling
+- Uses cheerio for HTML parsing and image extraction
+- Converts relative image URLs to absolute URLs based on the source URL
+- Returns unique images only (removes duplicates)
+- Prioritizes structured data over HTML selectors
+- Filters out common non-recipe images (logos, icons, etc.)
+
+## Use Cases
+
+- Extracting featured images for recipe cards
+- Generating recipe previews with images
+- Pre-populating recipe galleries
+- Creating visual recipe summaries
+- Enhancing recipe metadata with images
+
+## Example Usage in JavaScript
+
+```javascript
+const extractImages = async (url) => {
+  const response = await fetch('/api/extractImages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ url }),
+  });
+  
+  const data = await response.json();
+  
+  if (data.success) {
+    console.log(`Found ${data.images.length} images:`);
+    data.images.forEach((img, i) => {
+      console.log(`  ${i + 1}. ${img}`);
+    });
+  } else {
+    console.error('Error:', data.error);
+  }
+  
+  return data;
+};
+
+// Usage
+await extractImages('https://example.com/recipe/chocolate-chip-cookies');
+```

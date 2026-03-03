@@ -1,0 +1,241 @@
+---
+title: "Plating & Storage Guidance"
+description: "Get AI-powered plating suggestions and storage recommendations"
+---
+
+Mizen provides AI-generated plating suggestions and storage guidance to help you present and preserve your dishes properly.
+
+## How It Works
+
+The plating guidance feature analyzes your complete recipe to provide:
+
+1. **Plating suggestions** - Specific presentation techniques
+2. **Serving recommendations** - Ideal vessel and temperature
+3. **Storage instructions** - How to store leftovers safely
+4. **Shelf life estimates** - Refrigerator and freezer duration
+
+### AI Analysis
+
+Mizen uses Groq's Llama 3.3 70B model configured as a "professional chef and food stylist" to analyze:
+
+- Recipe title and dish type
+- Complete ingredient list
+- Cooking instructions and techniques
+- Cuisine and style context
+
+<Note>
+  The AI uses a low temperature setting (0.3) to provide reliable, practical guidance rather than creative suggestions.
+</Note>
+
+## Guidance Components
+
+### Plating Notes
+
+**2-3 sentences** with specific, actionable presentation tips:
+
+- **Placement** - How to arrange components on the plate
+- **Garnishes** - What to add for visual appeal
+- **Techniques** - Drizzling, stacking, layering suggestions
+- **Color and texture** - Balance and contrast recommendations
+
+**Example for Pasta Carbonara:**
+> "Twirl pasta into a nest in the center of a shallow bowl. Sprinkle extra Pecorino Romano and cracked black pepper on top. Finish with a drizzle of reserved pasta water for sheen."
+
+### Serving Vessel
+
+The ideal dish or container for serving:
+
+- **Shallow bowl** - Pasta dishes, risotto, soups
+- **Dinner plate** - Entrees with multiple components
+- **Small ramekin** - Individual portions, desserts
+- **Serving platter** - Family-style dishes
+- **Wine glass** - Layered desserts, parfaits
+
+### Serving Temperature
+
+Optimal temperature for the best eating experience:
+
+- **Hot** - Served immediately, steaming (160°F+)
+- **Warm** - Slightly cooled but still heated (120-140°F)
+- **Room temperature** - Cooled to ambient (65-75°F)
+- **Chilled** - Refrigerated before serving (35-45°F)
+
+<Note>
+  Serving temperature affects both food safety and flavor. Some dishes (like salads) taste best chilled, while others (like steak) benefit from resting at room temperature.
+</Note>
+
+### Storage Guide
+
+**2-3 sentences** on proper leftover storage:
+
+- **Container type** - Airtight, shallow, glass, etc.
+- **Cooling instructions** - When to refrigerate
+- **Separation notes** - Which components to store separately
+- **Reheating tips** - How to restore quality
+
+**Example for Stir-Fry:**
+> "Store in an airtight container once cooled to room temperature. Keep sauce separate if possible to prevent vegetables from becoming soggy. Reheat in a wok or skillet over high heat, adding a splash of water if needed."
+
+### Shelf Life
+
+Specific duration for safe storage:
+
+```json
+{
+  "fridge": 3,    // Days in refrigerator (34-40°F)
+  "freezer": 30   // Days in freezer (0°F or below)
+}
+```
+
+Or for non-freezer-friendly dishes:
+
+```json
+{
+  "fridge": 2,
+  "freezer": null  // Not suitable for freezing
+}
+```
+
+## Example Guidance
+
+### Seared Salmon with Vegetables
+
+**Plating Notes:**
+> "Place salmon skin-side down at an angle on the plate. Arrange roasted vegetables alongside, not underneath. Add a lemon wedge and fresh dill sprig for color."
+
+**Serving Vessel:** Dinner plate  
+**Serving Temperature:** Hot  
+**Storage Guide:**
+> "Store fish and vegetables in separate airtight containers to maintain texture. Cool completely before refrigerating. Reheat fish gently in a 275°F oven to prevent drying."
+
+**Shelf Life:** 2 days (fridge), null (freezer)
+
+### Chocolate Mousse
+
+**Plating Notes:**
+> "Pipe or spoon mousse into small serving glasses or ramekins. Top with lightly whipped cream and chocolate shavings. Serve with a crisp cookie on the side."
+
+**Serving Vessel:** Small ramekin  
+**Serving Temperature:** Chilled  
+**Storage Guide:**
+> "Cover individual portions with plastic wrap, pressing directly onto surface to prevent skin formation. Refrigerate until serving. Best enjoyed within 2 days for optimal texture."
+
+**Shelf Life:** 2 days (fridge), null (freezer)
+
+### Vegetable Curry
+
+**Plating Notes:**
+> "Serve curry in a shallow bowl with rice on the side or underneath. Garnish with fresh cilantro, lime wedge, and a dollop of yogurt. Add crispy papadums for textural contrast."
+
+**Serving Vessel:** Shallow bowl  
+**Serving Temperature:** Hot  
+**Storage Guide:**
+> "Store curry in an airtight container, separate from rice. Cool to room temperature before refrigerating. Freezes well in portions; thaw overnight and reheat gently on stovetop."
+
+**Shelf Life:** 4 days (fridge), 90 days (freezer)
+
+## AI Model Details
+
+### Model: Llama 3.3 70B Versatile
+
+- **Temperature:** 0.3 (focused on practical, reliable guidance)
+- **Max tokens:** 1024
+- **Response format:** Structured JSON
+
+### System Prompt
+
+The AI is configured with this identity:
+> "You are a professional chef and food stylist. Analyze recipes and provide plating guidance in JSON format."
+
+This ensures expertise in both culinary technique and visual presentation.
+
+## Use Cases
+
+### Home Cooks
+
+- **Special occasions** - Present dishes with restaurant-quality plating
+- **Food photography** - Style dishes for social media or documentation
+- **Skill development** - Learn professional plating techniques
+
+### Meal Planning
+
+- **Storage planning** - Know how long dishes keep before cooking
+- **Batch cooking** - Understand freezer-friendliness for meal prep
+- **Food safety** - Follow proper storage timelines
+
+### Entertaining
+
+- **Presentation** - Impress guests with thoughtful plating
+- **Timing** - Serve dishes at optimal temperatures
+- **Make-ahead planning** - Know what can be prepared in advance
+
+## Limitations
+
+### AI-Generated Guidance
+
+Plating suggestions are AI-generated and should be used as guidelines:
+
+- **Not definitive** - Use your judgment for your specific dish
+- **Style preferences** - Adjust suggestions to your aesthetic taste
+- **Equipment availability** - Adapt to the vessels and tools you have
+
+### Storage Safety
+
+Shelf life estimates are general guidelines:
+
+- **Food safety varies** - Storage conditions, ingredient freshness, and handling affect safety
+- **Use your senses** - Discard food that smells, looks, or tastes off
+- **When in doubt, throw it out** - Don't risk foodborne illness
+
+<Note>
+  Always follow USDA food safety guidelines. The AI provides general estimates, but your specific conditions may require shorter storage times.
+</Note>
+
+### Plating Complexity
+
+AI suggestions may not account for:
+
+- **Skill level** - Some techniques require practice
+- **Time constraints** - Elaborate plating takes time
+- **Available ingredients** - Suggested garnishes may not be on hand
+
+### Freezer Compatibility
+
+Not all dishes freeze well. The AI indicates `null` for freezer shelf life when:
+
+- Dairy-based sauces may separate
+- Fresh vegetables lose texture
+- Eggs change consistency
+- Delicate preparations don't withstand freezing
+
+## API Requirements
+
+Plating guidance requires a Groq API key configured in the environment:
+
+```
+GROQ_API_KEY=your_api_key_here
+```
+
+Without this key, the plating guidance feature will not be available.
+
+## Response Format
+
+The API returns structured JSON:
+
+```json
+{
+  "success": true,
+  "data": {
+    "platingNotes": "Place salmon skin-side down...",
+    "servingVessel": "dinner plate",
+    "servingTemp": "hot",
+    "storageGuide": "Store fish and vegetables separately...",
+    "shelfLife": {
+      "fridge": 2,
+      "freezer": null
+    }
+  }
+}
+```
+
+This structured format makes it easy to display guidance consistently throughout the application.

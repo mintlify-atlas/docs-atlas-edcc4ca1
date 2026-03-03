@@ -1,0 +1,142 @@
+---
+title: Cook Mode
+description: Step-by-step cooking interface with two viewing modes and keyboard shortcuts
+---
+
+Cook Mode provides a distraction-free interface for following recipes while cooking. Switch between list and focus views to match your workflow.
+
+## Viewing Modes
+
+Cook Mode offers two distinct viewing experiences:
+
+### List View
+
+Displays all recipe steps in a scrollable list, ideal for:
+- Getting an overview of the entire recipe
+- Jumping between non-sequential steps
+- Reviewing multiple steps at once
+
+Implemented in `/home/daytona/workspace/source/src/components/recipe/CookMode/ListView.tsx:1`.
+
+### Focus View (Card View)
+
+Shows one step at a time in large, readable text:
+- Minimizes distractions during active cooking
+- Features large, adjustable text sizing
+- Includes arrow key navigation
+- Automatically highlights ingredients and quantities
+
+Implemented in `/home/daytona/workspace/source/src/components/recipe/CookMode/CardView.tsx:1`.
+
+## Navigation
+
+<Steps>
+  <Step title="Switch between views">
+    Click the **List** or **Focus** toggle at the top of the page, or press `⌘J` (Mac) / `Ctrl+J` (Windows/Linux).
+  </Step>
+  
+  <Step title="Navigate steps in Focus view">
+    Use the arrow buttons or keyboard shortcuts:
+    - `←` Previous step
+    - `→` Next step
+  </Step>
+  
+  <Step title="Jump to a specific step">
+    In List view, click any step card to jump to it in Focus view.
+  </Step>
+</Steps>
+
+## Keyboard Shortcuts
+
+Cook Mode supports several keyboard shortcuts for hands-free navigation:
+
+| Shortcut | Action |
+|----------|--------|
+| `⌘J` / `Ctrl+J` | Toggle between List and Focus views |
+| `←` | Previous step (Focus view) |
+| `→` | Next step (Focus view) |
+| `⌘L` / `Ctrl+L` | Copy recipe link |
+
+<Note>
+Keyboard shortcuts are disabled when typing in input fields, so you can use arrow keys normally when editing.
+</Note>
+
+## Customization Options
+
+Access the settings menu (three dots icon) to customize your cooking experience:
+
+### Font Family
+
+Choose between two font options:
+- **Default (Sans-serif)** - Clean, modern Albert Sans font
+- **Serif** - Classic Domine font for a traditional cookbook feel
+
+### Step Sizing
+
+Adjust text size for optimal readability:
+- **Small** - Compact view, more content visible
+- **Medium** - Balanced size (default)
+- **Large** - Maximum readability, ideal for distance viewing
+
+Size settings apply to:
+- Step titles: 32-52px range
+- Step details: 17-24px range
+- Spacing and padding scale proportionally
+
+Configured in `/home/daytona/workspace/source/src/components/recipe/CookMode/StepViewer.tsx:79-95`.
+
+## Step Content
+
+Each step displays:
+
+1. **Step title** - Main action or instruction
+2. **Step detail** - Detailed instructions with:
+   - Highlighted ingredient names
+   - Highlighted quantities and measurements
+   - Visual emphasis on key information
+
+<Tip>
+Ingredients mentioned in steps are automatically highlighted using intelligent text matching. This helps you quickly identify what you need for each step.
+</Tip>
+
+## Quick Actions
+
+The settings menu provides quick access to:
+
+### Copy Link
+
+Share the current recipe with others. The link includes the full recipe state.
+
+**Shortcut**: `⌘L` / `Ctrl+L`
+
+### Copy Recipe
+
+Copy the entire recipe as formatted plain text, including:
+- Title and metadata
+- Grouped ingredients with measurements
+- Numbered instructions
+- Source information
+
+Perfect for:
+- Pasting into notes apps
+- Sharing via messaging apps
+- Printing or saving offline
+
+## Responsive Design
+
+Cook Mode adapts to all screen sizes:
+
+- **Desktop**: Full split-view with side panels
+- **Tablet**: Optimized touch targets and spacing
+- **Mobile**: Single-column layout with gesture support
+
+## Animation and Motion
+
+Cook Mode includes subtle animations for:
+- View transitions (200ms fade)
+- Step navigation (300ms slide)
+- Settings menu (spring animation)
+
+Motion can be reduced via system preferences - Mizen respects the `prefers-reduced-motion` setting.
+
+Configured in `/home/daytona/workspace/source/src/components/recipe/CookMode/index.tsx:8`.

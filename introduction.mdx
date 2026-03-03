@@ -1,0 +1,134 @@
+---
+title: Welcome to Mizen
+description: Your cooking companion for parsing, scaling, and organizing recipes from any source
+---
+
+# Welcome to Mizen
+
+Mizen is a cooking companion that transforms messy recipe websites and images into clean, distraction-free cooking experiences. Parse recipes from any URL or photo, scale ingredients automatically, and focus on what matters—the cooking.
+
+<CardGroup cols={2}>
+  <Card title="Parse any recipe" icon="link">
+    Extract recipes from any cooking website. Mizen intelligently parses ingredients, instructions, and metadata from thousands of recipe sites.
+  </Card>
+  <Card title="Upload recipe photos" icon="image">
+    Take a photo of a recipe card or cookbook page. Mizen's AI vision extracts the full recipe with structured ingredients and steps.
+  </Card>
+  <Card title="Scale ingredients" icon="calculator">
+    Adjust servings or multiply recipes instantly. All ingredient amounts update automatically with smart fraction formatting.
+  </Card>
+  <Card title="Step-by-step cooking" icon="list">
+    Follow along with titled instruction steps. Track timers, check off steps, and navigate recipes hands-free.
+  </Card>
+</CardGroup>
+
+## How it works
+
+Mizen uses a hybrid parsing approach to give you accurate recipe data:
+
+1. **JSON-LD extraction** - Fast, free parsing of structured recipe data embedded in websites
+2. **AI enrichment** - Powered by Groq's llama-3.3-70b-versatile for complex recipes and metadata
+3. **Vision parsing** - Extract recipes from images using AI vision models
+
+The result: clean recipes with grouped ingredients, titled steps, cuisine tags, storage guidance, and plating notes—all without the blog posts and ads.
+
+## Core features
+
+### Recipe parsing
+
+Extract recipes from any source:
+
+- **URL parsing** - Paste any recipe URL and get structured data in seconds
+- **Image parsing** - Upload photos of recipe cards, cookbooks, or handwritten notes
+- **Smart validation** - Automatically detects recipe content and validates URLs
+- **Multi-format support** - Handles JSON-LD, microdata, and plain HTML recipes
+
+### Ingredient intelligence
+
+Mizen understands ingredients at a deep level:
+
+- **Automatic grouping** - Ingredients organized by purpose (sauce, main, garnish, etc.)
+- **Smart scaling** - Handles fractions (½, ¼, ¾), ranges (2-3 cups), and mixed numbers (1½)
+- **Substitutions** - AI-generated alternatives for each ingredient
+- **Descriptions** - Learn what each ingredient contributes to the dish
+
+### Cooking experience
+
+**Servings controls**
+
+<Steps>
+  <Step title="Adjust servings">
+    Use the yield stepper to increase or decrease servings from 1-10
+  </Step>
+  <Step title="Apply scale multiplier">
+    Choose 1x, 2x, or 3x to multiply the entire recipe
+  </Step>
+  <Step title="See updated amounts">
+    All ingredient quantities recalculate automatically with proper fraction formatting
+  </Step>
+  <Step title="Reset anytime">
+    Click the servings display to reset to the original recipe yield
+  </Step>
+</Steps>
+
+**Step timers**
+
+Integrated timers help you track cooking times:
+
+- Timers extracted from instructions ("Simmer for 20 minutes")
+- Start/pause/reset controls for each step
+- Multiple timers can run simultaneously
+- Audio alerts when timers complete
+
+### Recipe organization
+
+**Recent recipes**
+
+Your parsed recipes are automatically saved:
+
+- Quick search by recipe name or description
+- Cuisine-based filtering
+- One-click access to previously parsed recipes
+- Stored locally in your browser
+
+**Metadata enrichment**
+
+Mizen extracts comprehensive recipe data:
+
+- Recipe title, author, and source URL
+- Prep time, cook time, and total time
+- Servings/yield information
+- Cuisine tags (Italian, Korean, Mediterranean, etc.)
+- Storage instructions and shelf life
+- Plating notes and serving suggestions
+
+<Note>
+  **Privacy first**: All recipe data is stored locally in your browser. Nothing is sent to external servers except during the initial parsing request.
+</Note>
+
+## Supported recipe sources
+
+Mizen works with thousands of recipe websites:
+
+- AllRecipes, Food Network, Bon Appétit, Serious Eats
+- Personal food blogs with structured recipe data
+- Any site using JSON-LD or microdata schema
+- Recipe cards and cookbook photos via image upload
+
+<Warning>
+  Some paywalled or dynamically loaded recipes may not parse correctly. For best results, use recipes that display all content on page load.
+</Warning>
+
+## Technology
+
+Mizen is built with modern web technologies:
+
+- **Frontend**: React 19, Next.js 15, TypeScript
+- **Styling**: Tailwind CSS 4, Shadcn/ui components
+- **AI/ML**: Groq API with llama-3.3-70b-versatile
+- **Parsing**: Cheerio for HTML parsing, JSON-LD extraction
+- **Vision**: AI vision models for image-based recipe extraction
+
+## Get started
+
+Ready to parse your first recipe? Follow the [quickstart guide](/quickstart) to get up and running in minutes.

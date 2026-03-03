@@ -1,0 +1,437 @@
+---
+title: System Architecture
+description: Understand Mizen's architecture, design patterns, and core systems
+---
+
+## Overview
+
+Mizen is a Next.js application that parses recipes from URLs or images using a hybrid approach combining structured data extraction and AI processing. The architecture prioritizes performance through a multi-layer parsing strategy that minimizes AI token usage while maintaining accuracy.
+
+## Core Architecture Pattern
+
+### Three-Layer Parsing System
+
+Mizen uses a sophisticated three-layer approach to recipe extraction:
+
+```
+┌─────────────────────────────────────────┐
+│         Layer 1: JSON-LD                │
+│  Fast, free, reliable when available    │
+│  Extracts structured recipe data        │
+└──────────────┬──────────────────────────┘
+               │
+               ▼
+┌─────────────────────────────────────────┐
+│     Layer 2: AI Parsing (Groq)          │
+│  Slower, uses tokens, handles any page  │
+│  Structured ingredients + enrichment    │
+└──────────────┬──────────────────────────┘
+               │
+               ▼
+┌─────────────────────────────────────────┐
+│   Layer 3: Hybrid (JSON-LD + AI)        │
+│  Uses JSON-LD for facts, AI for         │
+│  groupings, cuisine, and metadata       │
+└─────────────────────────────────────────┘
+```
+
+**Layer 1 — JSON-LD Extraction** (`src/utils/aiRecipeParser.ts:292`)
+- Extracts from `<script type="application/ld+json">` tags
+- Returns raw ingredient strings (no amount/unit split)
+- All ingredients in a single "Main" group
+- No cuisine, storage, or plating metadata
+- **Limitations**: Author filtering heuristic can be overly aggressive
+
+**Layer 2 — AI Parsing** (`src/utils/aiRecipeParser.ts:668`)
+- Uses Groq AI API with llama-3.3-70b-versatile model
+- Sends cleaned HTML (max 15k chars) to AI
+- Returns structured ingredients with amount/unit/name splits
+- Generates logical ingredient groupings
+- Adds AI metadata: descriptions, substitutions, cuisine, storage, plating
+- **Constraints**: 
+  - 15k char HTML truncation can cut off recipes on blog-heavy pages
+  - 4k token output limit can truncate complex recipes mid-JSON
+  - No deduplication if recipe appears twice in HTML
+
+**Layer 3 — Hybrid Approach** (Most Common)
+- Uses JSON-LD for title/author/servings/times (ground truth)
+- Calls AI to enrich with groupings, cuisine, and metadata
+- Best of both worlds: accurate facts + rich enhancements
+
+### Entry Points
+
+```typescript
+// src/utils/aiRecipeParser.ts
+
+// Parse from raw HTML string
+parseRecipe(rawHtml: string): Promise<ParserResult>
+
+// Fetch URL then parse
+parseRecipeFromUrl(url: string): Promise<ParserResult>
+
+// Vision model extraction from image
+parseRecipeFromImage(base64Image: string): Promise<ParserResult>
+```
+
+## API Architecture
+
+### Next.js App Router Structure
+
+Mizen uses Next.js 15+ App Router with API routes in `/src/app/api/`:
+
+```
+src/app/api/
+├── parseRecipe/          # Unified recipe parsing endpoint (primary)
+├── parseRecipeFromImage/ # Image-based recipe extraction
+├── fetchHtml/            # URL fetching with validation
+├── urlValidator/         # URL validation and checking
+├── parseIngredients/     # Legacy: AI ingredient parsing
+├── parseInstructions/    # Legacy: AI instruction parsing
+├── generateSubstitutions/# Generate ingredient substitutions
+├── generatePlatingGuidance/# Generate plating suggestions
+├── extractImages/        # Extract images from recipe pages
+├── feedback/             # User feedback submission
+└── admin/
+    └── debug-parse/      # Admin debugging tools
+```
+
+### Unified Parsing API
+
+The `/api/parseRecipe` endpoint (`src/app/api/parseRecipe/route.ts`) is the primary interface:
+
+**Request:**
+```json
+{
+  "url": "https://example.com/recipe"
+}
+```
+
+**Success Response:**
+```json
+{
+  "success": true,
+  "title": "Recipe Title",
+  "ingredients": [
+    {
+      "groupName": "Main",
+      "ingredients": [
+        {
+          "amount": "1",
+          "units": "cup",
+          "ingredient": "flour",
+          "description": "Provides structure",
+          "substitutions": ["almond flour", "oat flour"]
+        }
+      ]
+    }
+  ],
+  "instructions": [
+    {
+      "title": "Mix ingredients",
+      "detail": "In a large bowl, mix...",
+      "timeMinutes": 5
+    }
+  ],
+  "method": "json-ld" | "ai" | "json-ld+ai",
+  "author": "Chef Name",
+  "servings": 4,
+  "cuisine": ["Italian", "Mediterranean"],
+  "storageGuide": "Store in airtight container...",
+  "shelfLife": {"fridge": 3, "freezer": 30}
+}
+```
+
+**Error Response:**
+```json
+{
+  "success": false,
+  "error": {
+    "code": "ERR_NO_RECIPE_FOUND",
+    "message": "No recipe found on this page",
+    "retryAfter": 1234567890 // Optional: for rate limits
+  }
+}
+```
+
+## Data Flow Architecture
+
+### Recipe Parsing Flow
+
+```
+1. User Input (URL or Image)
+   ↓
+2. URL Validation (/api/urlValidator)
+   ↓
+3. HTML Fetching (/api/fetchHtml)
+   ↓
+4. HTML Cleaning (htmlCleaner.ts)
+   ├── Extract JSON-LD scripts first
+   ├── Remove ads, nav, scripts, styles
+   ├── Prioritize ingredient/instruction sections
+   └── Return optimized HTML (max 15k chars)
+   ↓
+5. Recipe Parsing (aiRecipeParser.ts)
+   ├── Try JSON-LD extraction (Layer 1)
+   │   ├── Success → Return immediately
+   │   └── Partial/Fail → Continue to AI
+   ├── AI Parsing with Groq (Layer 2)
+   │   └── Send cleaned HTML to llama-3.3-70b-versatile
+   └── Return parsed recipe
+   ↓
+6. Store in localStorage (storage.ts)
+   ├── Recent recipes (max 10)
+   └── Bookmarked recipes (unlimited)
+   ↓
+7. Display to User
+```
+
+### HTML Cleaning Strategy
+
+**Priority Order** (`src/utils/htmlCleaner.ts:29`):
+
+1. **Extract JSON-LD first** — Before any cleaning, preserve structured data
+2. **Identify recipe sections** — Find ingredients and instructions by:
+   - Class/ID selectors (`[class*="ingredient"]`, `[id*="instruction"]`)
+   - Schema.org attributes (`[itemprop="recipeIngredient"]`)
+   - Heading-based detection ("Ingredients", "Instructions" headers)
+3. **Remove non-essential elements** — Scripts, styles, navigation, ads, comments, social widgets
+4. **Build optimized HTML** — Structured format emphasizing recipe content:
+   ```html
+   <script type="application/ld+json">...</script>
+   <h1 class="recipe-title-parsed">Title</h1>
+   <section class="recipe-ingredients-parsed">
+     <h2>INGREDIENTS</h2>
+     ...
+   </section>
+   <section class="recipe-instructions-parsed">
+     <h2>INSTRUCTIONS</h2>
+     ...
+   </section>
+   ```
+
+## Client-Side Architecture
+
+### Component Structure
+
+```
+src/
+├── app/
+│   ├── page.tsx                 # Homepage with search
+│   ├── parsed-recipe-page/      # Recipe detail view
+│   ├── profile/                 # User profile
+│   └── layout.tsx               # Root layout
+├── components/
+│   ├── layout/                  # AppShell, Navbar, Sidebar
+│   ├── search/                  # Search form and input
+│   ├── ingredients/             # Ingredient cards and groups
+│   ├── recipe/                  # Recipe display components
+│   │   └── CookMode/            # Step-by-step cooking mode
+│   ├── ui/                      # Radix UI + shadcn components
+│   └── homepage/                # Landing page components
+├── hooks/
+│   └── useRecipeErrorHandler.ts # Error message handling
+├── contexts/                    # React contexts (if any)
+└── lib/
+    ├── storage.ts               # localStorage recipe management
+    └── utils.tsx                # Utility functions
+```
+
+### State Management
+
+**Local Storage Strategy** (`src/lib/storage.ts`):
+
+- **Recent Recipes** (`recentRecipes` key) — Last 10 parsed recipes, auto-sorted by access time
+- **Bookmarked Recipes** (`bookmarkedRecipes` key) — User-saved recipes (unlimited)
+- **Recipe Order** (`recipeOrder` key) — Custom ordering for drag-and-drop
+- **Error Logs** (`parse-n-plate-error-logs` key) — Last 50 errors for debugging
+
+Key operations:
+```typescript
+// src/lib/storage.ts
+
+getRecentRecipes(): ParsedRecipe[]           // Fetch recent recipes
+addRecentRecipe(recipe): void                // Add new recipe (auto-dedup by URL)
+getBookmarkedRecipes(): ParsedRecipe[]       // Fetch bookmarks
+addBookmark(id): void                        // Bookmark a recipe
+removeBookmark(id): void                     // Remove bookmark
+pinRecipe(id): void                          // Pin to top
+touchRecipeAccess(id): void                  // Update lastAccessedAt
+```
+
+**Data Normalization**:
+- Legacy string instructions converted to `{title, detail}` objects on read
+- Bookmark migration from ID-only to full recipe objects
+- Consistent sorting by `lastAccessedAt` or `parsedAt`
+
+### React Patterns
+
+**Functional Components Only** — No class components (enforced by AGENTS.md)
+
+**Hooks Usage**:
+- Custom hooks for error handling (`useRecipeErrorHandler`)
+- Standard React hooks (useState, useEffect, etc.)
+
+**Error Boundaries**:
+- Used for async and error handling in UI
+- Graceful degradation on failures
+
+## Design Patterns
+
+### Error Handling Pattern
+
+Consistent error response structure across all API endpoints:
+
+```typescript
+// src/utils/formatError.ts
+
+export interface ErrorResponse {
+  success: false;
+  error: {
+    code: string;          // ERR_INVALID_URL, ERR_NO_RECIPE_FOUND, etc.
+    message: string;       // User-friendly message
+    retryAfter?: number;   // Timestamp for rate limits
+  };
+}
+
+export const ERROR_CODES = {
+  ERR_INVALID_URL: 'ERR_INVALID_URL',
+  ERR_UNSUPPORTED_DOMAIN: 'ERR_UNSUPPORTED_DOMAIN',
+  ERR_FETCH_FAILED: 'ERR_FETCH_FAILED',
+  ERR_NO_RECIPE_FOUND: 'ERR_NO_RECIPE_FOUND',
+  ERR_AI_PARSE_FAILED: 'ERR_AI_PARSE_FAILED',
+  ERR_TIMEOUT: 'ERR_TIMEOUT',
+  ERR_RATE_LIMIT: 'ERR_RATE_LIMIT',
+  // ... more codes
+};
+```
+
+See [Error Handling](/development/error-handling) for details.
+
+### Repository Pattern
+
+LocalStorage acts as a repository with clear CRUD operations:
+
+```typescript
+// Create
+addRecentRecipe(recipe) → Adds with generated ID
+
+// Read
+getRecentRecipes() → Returns all recent recipes
+getRecipeById(id) → Returns single recipe
+
+// Update
+updateRecipe(id, updates) → Merges partial updates
+
+// Delete
+removeRecentRecipe(id) → Removes from storage
+restoreRecentRecipe(recipe) → Undo deletion
+```
+
+### Normalizer Pattern
+
+Data normalization functions ensure consistency:
+
+```typescript
+// Instruction normalization (storage.ts:117)
+normalizeInstructions(instructions?: Array<string | InstructionStep>)
+  → InstructionStep[]
+
+// Cuisine normalization (aiRecipeParser.ts:254)
+normalizeCuisineField(raw: unknown) → string[] | undefined
+
+// HTML entity decoding (aiRecipeParser.ts:219)
+decodeHtmlEntities(text: string) → string
+```
+
+## Performance Optimizations
+
+### Token Usage Minimization
+
+1. **JSON-LD First** — Avoid AI calls when structured data exists
+2. **HTML Truncation** — Limit to 15k chars before sending to AI
+3. **Smart Cleaning** — Remove ads/nav/comments before AI processing
+4. **Output Limits** — Cap AI response to 4k tokens
+
+### Caching Strategy
+
+- **localStorage caching** — Parsed recipes stored client-side
+- **No duplicate parsing** — Same URL detection prevents re-parsing
+- **Recent recipes cap** — Max 10 recent recipes to prevent bloat
+
+### Client-Side Optimization
+
+- **React 19** — Latest performance improvements
+- **CSS Modules + Tailwind** — Optimized styling
+- **Tree shaking** — Unused code elimination via Next.js
+- **Lazy loading** — Components loaded on demand
+
+## Known Limitations
+
+### Accuracy Issues
+
+**From `aiRecipeParser.ts` comments:**
+
+1. **Author-name heuristic** (line 381) — False positives on short instructions like "Season well"
+2. **AI format consistency** — Sometimes returns string instructions instead of `{title, detail}` objects
+3. **HTML truncation** — 15k char limit can cut off recipes on blog-heavy pages
+4. **Output truncation** — 4k token limit can truncate complex recipes mid-JSON
+5. **No deduplication** — Recipe appearing twice in HTML (jump-to-recipe + inline) not handled
+6. **Instruction length filter** — 10-char minimum silently drops short valid steps
+
+### Cuisine Detection Issues
+
+**From AI prompt (line 1164):**
+- Pad Thai incorrectly mapped to ["Chinese"] instead of ["Thai"]
+- Thai cuisine not in SUPPORTED_CUISINES list
+- Prompt teaches wrong associations to the model
+
+## Security Considerations
+
+### API Key Management
+
+- **Environment variables only** — `GROQ_API_KEY` never exposed to client
+- **Server-side API calls** — All AI requests from Next.js API routes
+
+### Input Validation
+
+```typescript
+// URL validation before fetching
+try {
+  new URL(url); // Throws if invalid
+} catch {
+  return formatError(ERROR_CODES.ERR_INVALID_URL, 'Invalid URL format');
+}
+```
+
+### XSS Prevention
+
+- **Cheerio HTML parsing** — Safe DOM manipulation
+- **React auto-escaping** — XSS protection by default
+- **No dangerouslySetInnerHTML** — Avoid direct HTML injection
+
+## Testing Strategy
+
+While test files aren't in the source, the architecture supports:
+
+- **Unit tests** — Pure functions (formatError, normalizers)
+- **Integration tests** — API route handlers
+- **E2E tests** — Full parsing flow from URL to display
+
+## Deployment Architecture
+
+Designed for **Vercel deployment**:
+
+- Next.js serverless functions for API routes
+- Edge runtime support (if enabled)
+- Environment variables via Vercel dashboard
+- Analytics via `@vercel/analytics` and `@vercel/speed-insights`
+
+## Future Architecture Considerations
+
+**From TECHNICAL_SUMMARY.md:**
+
+1. **Sentry integration** — Real-time error tracking in production
+2. **Automatic retries** — Retry failed operations automatically
+3. **Fallback strategies** — Multiple parsing strategies for robustness
+4. **User preferences** — Remember user's preferred error handling
+5. **Accessibility improvements** — Screen reader support, keyboard navigation

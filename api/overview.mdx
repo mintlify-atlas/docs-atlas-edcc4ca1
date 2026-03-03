@@ -1,0 +1,263 @@
+---
+title: API Overview
+description: Introduction to the Mizen API architecture, response formats, and core concepts
+---
+
+# API Overview
+
+The Mizen API provides endpoints for parsing recipes from URLs and images, managing recipe data, and generating AI-powered recipe enhancements. All API endpoints are built using Next.js API routes and follow RESTful conventions.
+
+## Base URL
+
+All API endpoints are relative to your deployment URL:
+
+```
+https://your-domain.com/api/
+```
+
+## Architecture
+
+Mizen uses a two-layer parsing approach for maximum reliability:
+
+### 1. JSON-LD Extraction (Primary)
+
+Fast extraction from structured data embedded in recipe websites. This method:
+- Uses no AI tokens
+- Works with Recipe schema.org markup
+- Returns results in milliseconds
+- Provides high accuracy for structured recipe sites
+
+### 2. AI-Based Parsing (Fallback)
+
+When structured data is unavailable, Mizen uses AI vision models to extract recipe content from:
+- Cleaned HTML content
+- Uploaded images (recipe cards, cookbook pages, screenshots)
+- Unstructured recipe text
+
+The API automatically selects the best parsing method and returns the `method` field indicating which approach was used.
+
+## Response Format
+
+All API endpoints return consistent JSON responses with a `success` boolean flag.
+
+### Success Response
+
+```json
+{
+  "success": true,
+  "data": {
+    // Endpoint-specific data
+  }
+}
+```
+
+### Error Response
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "ERR_CODE",
+    "message": "User-friendly error message",
+    "retryAfter": 1234567890 // Optional: Unix timestamp in ms for rate limits
+  }
+}
+```
+
+## Error Codes
+
+Mizen uses standardized error codes across all endpoints:
+
+| Code | Scenario | Message |
+|------|----------|----------|
+| `ERR_INVALID_URL` | URL fails validation | "That doesn't look like a valid URL" |
+| `ERR_UNSUPPORTED_DOMAIN` | Site not supported | "We don't support this website yet" |
+| `ERR_FETCH_FAILED` | Network or scraping fails | "We couldn't reach that page" |
+| `ERR_NO_RECIPE_FOUND` | No recipe data found | "No recipe found on this page" |
+| `ERR_AI_PARSE_FAILED` | AI extraction fails | "We found the page but couldn't extract the recipe" |
+| `ERR_TIMEOUT` | Request times out | "That website is taking too long" |
+| `ERR_UNKNOWN` | Uncaught errors | "Something went wrong" |
+| `ERR_INVALID_FILE_TYPE` | Invalid image format | "Please select a valid image file" |
+| `ERR_FILE_TOO_LARGE` | File exceeds size limit | "Image size must be less than 10MB" |
+| `ERR_NOT_A_URL` | Input is not a URL | "Paste a recipe URL" |
+| `ERR_RATE_LIMIT` | Too many requests | "Too many requests" |
+| `ERR_API_UNAVAILABLE` | Service unavailable | "Our service is temporarily down" |
+| `ERR_FEEDBACK_SUBMIT_FAILED` | Feedback submission fails | "Failed to submit feedback" |
+| `ERR_FEEDBACK_UPLOAD_FAILED` | Screenshot upload fails | "Failed to upload screenshots" |
+
+## Rate Limiting
+
+When rate limits are exceeded, the API returns:
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "ERR_RATE_LIMIT",
+    "message": "Too many requests",
+    "retryAfter": 1234567890
+  }
+}
+```
+
+The `retryAfter` field contains a Unix timestamp (in milliseconds) indicating when the client can retry the request.
+
+## Recipe Data Structure
+
+Successful recipe parsing endpoints return the following data structure:
+
+```json
+{
+  "success": true,
+  "title": "Recipe Title",
+  "ingredients": [
+    {
+      "groupName": "Main ingredients",
+      "ingredients": [
+        {
+          "amount": "2",
+          "units": "cups",
+          "ingredient": "all-purpose flour",
+          "description": "Provides structure and body",
+          "substitutions": ["cake flour", "whole wheat flour"]
+        }
+      ]
+    },
+    {
+      "groupName": "For the sauce",
+      "ingredients": [
+        {
+          "amount": "1/4",
+          "units": "cup",
+          "ingredient": "soy sauce",
+          "description": "Adds umami depth and saltiness",
+          "substitutions": ["tamari", "coconut aminos"]
+        }
+      ]
+    }
+  ],
+  "instructions": [
+    "Preheat oven to 350°F.",
+    "Mix dry ingredients in a large bowl.",
+    "Add wet ingredients and stir until combined."
+  ],
+  "author": "Chef Name",
+  "sourceUrl": "https://example.com/recipe",
+  "summary": "AI-generated recipe summary",
+  "cuisine": ["Italian", "Mediterranean"],
+  "servings": "4-6 servings",
+  "prepTimeMinutes": 15,
+  "cookTimeMinutes": 30,
+  "totalTimeMinutes": 45,
+  "storageGuide": "Store in airtight container for up to 3 days",
+  "shelfLife": "3 days refrigerated",
+  "platingNotes": "Garnish with fresh herbs",
+  "servingVessel": "Large serving bowl",
+  "servingTemp": "Hot",
+  "method": "json-ld"
+}
+```
+
+### Field Descriptions
+
+- **title** (required): Recipe name
+- **ingredients** (required): Array of ingredient groups with structured ingredient data
+- **instructions** (required): Array of step-by-step instructions
+- **author** (optional): Recipe author or creator
+- **sourceUrl** (optional): Original recipe URL
+- **summary** (optional): AI-generated recipe summary
+- **cuisine** (optional): Array of cuisine types
+- **servings** (optional): Serving size or yield
+- **prepTimeMinutes** (optional): Preparation time
+- **cookTimeMinutes** (optional): Cooking time
+- **totalTimeMinutes** (optional): Total time
+- **storageGuide** (optional): Storage instructions
+- **shelfLife** (optional): How long the dish keeps
+- **platingNotes** (optional): Plating suggestions
+- **servingVessel** (optional): Recommended serving container
+- **servingTemp** (optional): Serving temperature
+- **method** (optional): Parsing method used ("json-ld" or "ai")
+
+## Common Request Headers
+
+All API requests should include:
+
+```bash
+Content-Type: application/json
+```
+
+For file upload endpoints:
+
+```bash
+Content-Type: multipart/form-data
+```
+
+## Example Request
+
+Here's a complete example of parsing a recipe from a URL:
+
+```bash
+curl -X POST https://your-domain.com/api/parseRecipe \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://www.example.com/chocolate-cake-recipe"
+  }'
+```
+
+Example response:
+
+```json
+{
+  "success": true,
+  "title": "Classic Chocolate Cake",
+  "ingredients": [
+    {
+      "groupName": "For the cake",
+      "ingredients": [
+        {
+          "amount": "2",
+          "units": "cups",
+          "ingredient": "all-purpose flour",
+          "description": "Provides structure",
+          "substitutions": ["cake flour"]
+        }
+      ]
+    }
+  ],
+  "instructions": [
+    "Preheat oven to 350°F.",
+    "Mix ingredients and bake for 30 minutes."
+  ],
+  "servings": "8 servings",
+  "prepTimeMinutes": 15,
+  "cookTimeMinutes": 30,
+  "totalTimeMinutes": 45,
+  "method": "json-ld"
+}
+```
+
+## Timeouts
+
+Different endpoints have different timeout configurations:
+
+- **URL validation**: 10 seconds
+- **Recipe parsing**: 30 seconds
+- **AI processing**: Variable based on content size
+
+Requests that exceed these timeouts will return an `ERR_TIMEOUT` error.
+
+## HTTP Status Codes
+
+All endpoints return HTTP 200 OK with structured success/error responses in the JSON body. The `success` field determines whether the operation succeeded:
+
+- **200 OK**: Request processed (check `success` field in response)
+- **400 Bad Request**: Invalid request (feedback endpoints)
+- **500 Internal Server Error**: Server error (feedback endpoints)
+
+## Next Steps
+
+- [Authentication](/api/authentication) - Learn about API authentication and security
+- [Parse Recipe](/api/parse-recipe) - Parse recipes from URLs
+- [Parse Recipe from Image](/api/parse-recipe-from-image) - Extract recipes from images
+- [Generate Substitutions](/api/generate-substitutions) - Get ingredient alternatives
+- [Generate Plating Guidance](/api/generate-plating-guidance) - Get plating and storage advice

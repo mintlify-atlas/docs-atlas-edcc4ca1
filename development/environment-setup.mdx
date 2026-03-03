@@ -1,0 +1,258 @@
+---
+title: Environment Setup
+description: Configure environment variables and API keys for Mizen
+---
+
+## Overview
+
+Mizen requires several environment variables to be configured for full functionality. This guide covers all required and optional environment variables.
+
+## Environment Files
+
+Mizen uses different environment files for different deployment environments:
+
+- `.env.local` - Local development (not committed to git)
+- `.env.development.local` - Development-specific overrides
+- `.env.test.local` - Testing environment
+- `.env.production.local` - Production-specific overrides
+
+<Warning>
+Never commit `.env` files containing secrets to version control. These files are included in `.gitignore` and `.dockerignore`.
+</Warning>
+
+## Required Environment Variables
+
+### Groq API Key
+
+The Groq API is used for AI-powered recipe parsing and ingredient extraction.
+
+<Steps>
+  <Step title="Create a Groq account">
+    Sign up at [https://console.groq.com/](https://console.groq.com/)
+  </Step>
+
+  <Step title="Generate an API key">
+    Navigate to your dashboard and create a new API key.
+  </Step>
+
+  <Step title="Accept model terms">
+    If you encounter a "model_terms_required" error, visit the model playground to accept the terms for the models you plan to use.
+  </Step>
+
+  <Step title="Add to environment file">
+    ```bash .env.local
+    GROQ_API_KEY=your_groq_api_key_here
+    ```
+  </Step>
+</Steps>
+
+### Supabase Configuration
+
+Supabase is used for database operations and authentication.
+
+```bash .env.local
+# Public Supabase URL
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+
+# Public anonymous key (safe to expose in client-side code)
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+
+# Service role key (server-side only, keep secret)
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+```
+
+<Accordion title="How to get Supabase credentials">
+  1. Create a project at [https://supabase.com](https://supabase.com)
+  2. Navigate to **Settings** > **API**
+  3. Copy the **Project URL** for `NEXT_PUBLIC_SUPABASE_URL`
+  4. Copy the **anon/public** key for `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+  5. Copy the **service_role** key for `SUPABASE_SERVICE_ROLE_KEY`
+
+  <Warning>
+  The `service_role` key bypasses Row Level Security. Never expose it in client-side code.
+  </Warning>
+</Accordion>
+
+## Optional Environment Variables
+
+### Notion Integration (Feedback System)
+
+If you want to enable the feedback system that sends data to Notion:
+
+```bash .env.local
+# Notion API key for feedback collection
+NOTION_API_KEY=your_notion_integration_token
+
+# Notion database ID for storing feedback
+NOTION_FEEDBACK_DATABASE_ID=your_notion_database_id
+```
+
+<Accordion title="Setting up Notion integration">
+  1. Create a Notion integration at [https://www.notion.so/my-integrations](https://www.notion.so/my-integrations)
+  2. Copy the **Internal Integration Token** for `NOTION_API_KEY`
+  3. Create a database in Notion for feedback
+  4. Share the database with your integration
+  5. Copy the database ID from the URL for `NOTION_FEEDBACK_DATABASE_ID`
+</Accordion>
+
+### Application Versioning
+
+```bash .env.local
+# App version displayed in the UI (defaults to 0.1.0)
+NEXT_PUBLIC_APP_VERSION=0.1.0
+```
+
+### Deployment Environment
+
+```bash .env.local
+# Vercel environment (automatically set by Vercel)
+NEXT_PUBLIC_VERCEL_ENV=preview
+
+# Node environment (development, production, or test)
+NODE_ENV=development
+```
+
+## Complete Example
+
+Here's a complete `.env.local` file template:
+
+```bash .env.local
+# ============================================
+# REQUIRED - AI Processing
+# ============================================
+GROQ_API_KEY=gsk_your_groq_api_key_here
+
+# ============================================
+# REQUIRED - Database & Authentication
+# ============================================
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+# ============================================
+# OPTIONAL - Feedback System
+# ============================================
+NOTION_API_KEY=secret_your_notion_token
+NOTION_FEEDBACK_DATABASE_ID=abc123def456
+
+# ============================================
+# OPTIONAL - Application Config
+# ============================================
+NEXT_PUBLIC_APP_VERSION=0.1.0
+```
+
+## Environment Variable Usage
+
+### Client-Side vs Server-Side
+
+Next.js handles environment variables differently based on their prefix:
+
+<CardGroup cols={2}>
+  <Card title="Client-Side" icon="browser">
+    Variables prefixed with `NEXT_PUBLIC_` are exposed to the browser.
+
+    ```typescript
+    // Available in client components
+    process.env.NEXT_PUBLIC_SUPABASE_URL
+    ```
+  </Card>
+
+  <Card title="Server-Side" icon="server">
+    Variables without the prefix are only available on the server.
+
+    ```typescript
+    // Only available in API routes and server components
+    process.env.GROQ_API_KEY
+    ```
+  </Card>
+</CardGroup>
+
+<Warning>
+Never prefix sensitive keys (API secrets, service role keys) with `NEXT_PUBLIC_` as this will expose them in the client-side bundle.
+</Warning>
+
+## Validating Your Setup
+
+After configuring your environment variables:
+
+<Steps>
+  <Step title="Restart the development server">
+    ```bash
+    npm run dev
+    ```
+  </Step>
+
+  <Step title="Check for missing variables">
+    The application will log errors in the console if required environment variables are missing.
+  </Step>
+
+  <Step title="Test functionality">
+    - Try parsing a recipe URL to verify Groq API integration
+    - Check authentication features to verify Supabase configuration
+    - Submit feedback to verify Notion integration (if configured)
+  </Step>
+</Steps>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Groq API errors">
+    **Error**: `GROQ_API_KEY is not configured`
+
+    **Solution**: Ensure the `GROQ_API_KEY` is set in your `.env.local` file and the server has been restarted.
+
+    **Error**: `model_terms_required`
+
+    **Solution**: Visit [https://console.groq.com/playground](https://console.groq.com/playground) and accept the terms for the models being used.
+  </Accordion>
+
+  <Accordion title="Supabase connection issues">
+    **Error**: `Invalid Supabase URL` or authentication failures
+
+    **Solution**:
+    - Verify the URL format: `https://your-project.supabase.co`
+    - Check that the anon key and service role key match your project
+    - Ensure Row Level Security policies are configured correctly
+  </Accordion>
+
+  <Accordion title="Environment variables not loading">
+    **Issue**: Changes to `.env.local` not taking effect
+
+    **Solution**:
+    1. Restart the Next.js development server completely
+    2. Clear `.next` cache: `rm -rf .next`
+    3. Verify the file is named exactly `.env.local` (not `.env.local.txt`)
+    4. Check that the file is in the project root directory
+  </Accordion>
+</AccordionGroup>
+
+## Security Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Use Strong Keys" icon="key">
+    Generate cryptographically secure API keys and rotate them regularly.
+  </Card>
+
+  <Card title="Limit Permissions" icon="shield">
+    Use the minimum permissions necessary. For example, use anon keys for client-side Supabase access.
+  </Card>
+
+  <Card title="Never Commit Secrets" icon="ban">
+    Always add `.env*` files to `.gitignore` to prevent accidental commits.
+  </Card>
+
+  <Card title="Use Different Keys" icon="layer-group">
+    Use separate API keys for development, staging, and production environments.
+  </Card>
+</CardGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Installation" icon="download" href="/development/installation">
+    Install dependencies and set up your development environment
+  </Card>
+  <Card title="Docker Setup" icon="docker" href="/development/docker">
+    Deploy Mizen using Docker containers
+  </Card>
+</CardGroup>

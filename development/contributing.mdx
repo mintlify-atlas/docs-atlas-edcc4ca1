@@ -1,0 +1,129 @@
+---
+title: Contributing to Mizen
+description: Guidelines for contributing to the Mizen project
+---
+
+## Welcome Contributors
+
+Thank you for your interest in contributing to Mizen (Parse-n-Plate)! This guide will help you get started with contributing to the project.
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js (version 20 or higher recommended)
+- npm package manager
+- Git for version control
+- Basic knowledge of TypeScript and React
+
+### Setting Up Your Development Environment
+
+1. Clone the repository
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Set up your environment variables (`.env.local`)
+4. Start the development server:
+   ```bash
+   npm run dev
+   ```
+
+## Development Workflow
+
+### Making Changes
+
+1. **Start Small**: Prefer smaller, incremental changes over large rewrites
+2. **Test Your Changes**: Run the development server and test thoroughly
+3. **Run Linting**: Before committing, ensure your code passes linting:
+   ```bash
+   npm run lint
+   ```
+   Or automatically fix issues:
+   ```bash
+   npm run lint:fix
+   ```
+
+### Available Scripts
+
+- `npm run dev` — Start development server
+- `npm run build` — Create production build
+- `npm run start` — Start production server
+- `npm run lint` — Run ESLint to check code quality
+- `npm run lint:fix` — Automatically fix linting issues
+- `npm run docker:build` — Build Docker image
+- `npm run docker:run` — Run Docker container
+
+### Code Review Process
+
+<Note>
+For large or risky changes, contributors should:
+1. Signal the change scope (⚠️ LARGE CHANGE or 🛑 HIGH RISK)
+2. Explain the reasoning and impact
+3. Wait for maintainer confirmation before proceeding
+</Note>
+
+### Documentation Updates
+
+When contributing, please update documentation for:
+
+- New features or functionality
+- Breaking changes
+- Non-obvious logic or implementation details
+- Changes to the README or other markdown files
+
+## Communication Guidelines
+
+### User Context
+
+Mizen is built with a specific audience in mind:
+- **Primary Audience**: Product designers with limited coding experience
+- **Communication Style**: Clear, step-by-step explanations
+- **Visual Signals**: Use clear indicators (⚠️ 🛑 ⏸️ 📋 ✅) where appropriate
+
+### Commit Messages
+
+Write clear, descriptive commit messages that explain:
+- **What** changed
+- **Why** the change was necessary
+
+Example:
+```
+Improved checkbox styling to filled style
+
+Updated checkbox component to use filled style for better visual consistency
+with the overall design system.
+```
+
+## Project-Specific Guidelines
+
+### TypeScript Requirements
+
+- Use strict types throughout the codebase
+- Avoid using `any` type
+- Define interfaces for complex data structures
+- See [Code Style Guidelines](/development/code-style) for more details
+
+### React Conventions
+
+- Use functional components only (no class components)
+- Utilize React hooks for state management and side effects
+- Implement Error Boundaries for async operations and error handling
+
+### UI Development
+
+- When modifying components under `components/ui/`, review and update `src/app/globals.css` as needed
+- Use Solar Icons exclusively (prefer filled variants)
+- Styling uses CSS Modules and Tailwind CSS
+- For dropdowns/popovers, use `modal={false}` to avoid scroll lock
+
+## Getting Help
+
+If you need help or have questions:
+- Review the [Code Style Guidelines](/development/code-style)
+- Check the [Changelog](/development/changelog) for recent updates
+- Refer to project documentation in the repository
+
+## Recognition
+
+All contributors will be recognized for their contributions to the project. Thank you for helping make Mizen better!

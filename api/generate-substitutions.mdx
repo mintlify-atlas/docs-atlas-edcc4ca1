@@ -1,0 +1,261 @@
+---
+title: 'Generate Ingredient Substitutions'
+api: 'POST /api/generateSubstitutions'
+description: 'Generate context-aware ingredient substitutions using AI based on the full recipe'
+---
+
+## Overview
+
+The `/api/generateSubstitutions` endpoint generates intelligent, context-aware ingredient substitutions. It analyzes the full recipe context (ingredients, instructions, cuisine) to suggest practical substitutions that work specifically for the recipe at hand.
+
+Unlike generic substitution lists, this endpoint considers:
+- The cooking method used in the recipe
+- Other ingredients in the recipe
+- The cuisine style
+- How the ingredient interacts with the dish
+
+## Request
+
+<ParamField body="ingredientName" type="string" required>
+  The name of the ingredient to find substitutions for.
+  
+  Example: `"heavy cream"`, `"gochujang"`, `"parmesan cheese"`
+</ParamField>
+
+<ParamField body="ingredientAmount" type="string">
+  The amount of the ingredient in the recipe (optional but recommended for better suggestions).
+  
+  Example: `"1/2 cup"`, `"2 tablespoons"`
+</ParamField>
+
+<ParamField body="recipeTitle" type="string">
+  The title of the recipe (helps provide context).
+  
+  Example: `"Gochujang Pasta"`
+</ParamField>
+
+<ParamField body="cuisine" type="array">
+  Array of cuisine tags for the recipe.
+  
+  Example: `["Korean", "Italian Fusion"]`
+</ParamField>
+
+<ParamField body="ingredients" type="array">
+  Full ingredient list of the recipe. Helps the AI understand ingredient interactions.
+  
+  <Expandable title="Ingredients Array Structure">
+    Array of ingredient groups:
+    ```typescript
+    [
+      {
+        "groupName": "For the sauce",
+        "ingredients": [
+          {
+            "amount": "2",
+            "units": "tablespoons",
+            "ingredient": "gochujang"
+          }
+        ]
+      }
+    ]
+    ```
+  </Expandable>
+</ParamField>
+
+<ParamField body="instructions" type="array">
+  Full cooking instructions. Helps the AI understand how the ingredient is used.
+  
+  Example: `["Heat butter in a pan", "Add gochujang and cream"]`
+</ParamField>
+
+## Response
+
+### Success Response
+
+<ResponseField name="success" type="boolean" required>
+  Always `true` for successful responses
+</ResponseField>
+
+<ResponseField name="data" type="object" required>
+  Substitution data
+  
+  <Expandable title="Substitution Data Structure">
+    <ResponseField name="substitutions" type="array">
+      Array of suggested substitutions (typically 3 suggestions)
+      
+      <Expandable title="Substitution Object">
+        <ResponseField name="name" type="string">
+          Name of the substitute ingredient
+        </ResponseField>
+        
+        <ResponseField name="description" type="string">
+          Context-aware description explaining why this substitution works for THIS specific recipe. Maximum 100 characters.
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### Error Response
+
+<ResponseField name="error" type="string">
+  Error message describing what went wrong
+</ResponseField>
+
+<ResponseField name="details" type="string">
+  Additional error details (if available)
+</ResponseField>
+
+## Examples
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://your-domain.com/api/generateSubstitutions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "ingredientName": "gochujang",
+    "ingredientAmount": "2 tablespoons",
+    "recipeTitle": "Gochujang Pasta",
+    "cuisine": ["Korean", "Fusion"],
+    "ingredients": [
+      {
+        "groupName": "For the sauce",
+        "ingredients": [
+          {"amount": "2", "units": "tablespoons", "ingredient": "gochujang"},
+          {"amount": "1/2", "units": "cup", "ingredient": "heavy cream"}
+        ]
+      }
+    ],
+    "instructions": [
+      "Heat butter in a pan over medium heat.",
+      "Add gochujang and stir until fragrant.",
+      "Add cream and simmer."
+    ]
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch('/api/generateSubstitutions', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    ingredientName: 'gochujang',
+    ingredientAmount: '2 tablespoons',
+    recipeTitle: 'Gochujang Pasta',
+    cuisine: ['Korean', 'Fusion'],
+    ingredients: [
+      {
+        groupName: 'For the sauce',
+        ingredients: [
+          { amount: '2', units: 'tablespoons', ingredient: 'gochujang' },
+          { amount: '1/2', units: 'cup', ingredient: 'heavy cream' }
+        ]
+      }
+    ],
+    instructions: [
+      'Heat butter in a pan over medium heat.',
+      'Add gochujang and stir until fragrant.',
+      'Add cream and simmer.'
+    ]
+  })
+});
+
+const result = await response.json();
+
+if (result.success) {
+  console.log('Substitutions for', ingredientName + ':');
+  result.data.substitutions.forEach(sub => {
+    console.log(`- ${sub.name}: ${sub.description}`);
+  });
+} else {
+  console.error('Error:', result.error);
+}
+```
+
+```python Python
+import requests
+
+response = requests.post(
+    'https://your-domain.com/api/generateSubstitutions',
+    json={
+        'ingredientName': 'gochujang',
+        'ingredientAmount': '2 tablespoons',
+        'recipeTitle': 'Gochujang Pasta',
+        'cuisine': ['Korean', 'Fusion'],
+        'ingredients': [
+            {
+                'groupName': 'For the sauce',
+                'ingredients': [
+                    {'amount': '2', 'units': 'tablespoons', 'ingredient': 'gochujang'},
+                    {'amount': '1/2', 'units': 'cup', 'ingredient': 'heavy cream'}
+                ]
+            }
+        ],
+        'instructions': [
+            'Heat butter in a pan over medium heat.',
+            'Add gochujang and stir until fragrant.',
+            'Add cream and simmer.'
+        ]
+    }
+)
+
+result = response.json()
+
+if result.get('success'):
+    print(f"Substitutions for gochujang:")
+    for sub in result['data']['substitutions']:
+        print(f"  - {sub['name']}: {sub['description']}")
+else:
+    print(f"Error: {result.get('error')}")
+```
+
+</CodeGroup>
+
+### Success Response Example
+
+```json
+{
+  "success": true,
+  "data": {
+    "substitutions": [
+      {
+        "name": "Sriracha mixed with miso paste",
+        "description": "Combines heat and umami to mimic gochujang's fermented depth in cream sauce"
+      },
+      {
+        "name": "Sambal oelek with a pinch of sugar",
+        "description": "Provides similar heat level; sugar balances the spiciness with cream"
+      },
+      {
+        "name": "Tomato paste with red pepper flakes",
+        "description": "Creates savory base with adjustable heat for this pasta sauce"
+      }
+    ]
+  }
+}
+```
+
+### Error Response Example
+
+```json
+{
+  "error": "Ingredient name is required"
+}
+```
+
+## AI Model
+
+This endpoint uses the `llama-3.3-70b-versatile` model via Groq with:
+- Temperature: 0.4 (balanced between creativity and consistency)
+- Max tokens: 1024
+
+<Warning>
+  This endpoint requires a valid Groq API key configured as `GROQ_API_KEY` in your environment variables.
+</Warning>
+
+<Warning>
+  While only `ingredientName` is required, providing full recipe context (`ingredients`, `instructions`, `cuisine`) results in much better, more contextually relevant substitution suggestions.
+</Warning>

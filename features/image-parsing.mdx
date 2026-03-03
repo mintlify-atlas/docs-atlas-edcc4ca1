@@ -1,0 +1,249 @@
+---
+title: Image Parsing
+description: Extract recipes from photos using AI vision models
+---
+
+Mizen can parse recipes directly from images using AI vision technology. Upload photos of recipe cards, cookbook pages, or screenshots to extract structured recipe data.
+
+## Supported Image Types
+
+Mizen accepts common image formats:
+
+- **JPG/JPEG** - Standard photo format
+- **PNG** - Screenshots and graphics
+- **WEBP** - Modern web format
+- **GIF** - Animated or static images
+
+**Maximum file size**: 10MB
+
+Format validation in `/home/daytona/workspace/source/src/app/api/parseRecipeFromImage/route.ts:61-79`.
+
+## How to Use
+
+<Steps>
+  <Step title="Switch to image mode">
+    Click the dropdown arrow in the search bar and select the image upload option.
+  </Step>
+  
+  <Step title="Select an image">
+    Click the upload area or drag and drop an image file. A preview will appear.
+  </Step>
+  
+  <Step title="Parse the recipe">
+    Click "Parse Recipe from Image" to begin processing. This typically takes 3-5 seconds.
+  </Step>
+  
+  <Step title="Review results">
+    The parsed recipe appears in the recipe viewer with all extracted data.
+  </Step>
+</Steps>
+
+## What Gets Extracted
+
+The AI vision model extracts:
+
+- **Title** - Recipe name from image
+- **Ingredients** - Complete ingredient list with:
+  - Amounts (quantities)
+  - Units (cups, tablespoons, etc.)
+  - Ingredient names
+  - Grouped sections (if present)
+- **Instructions** - Step-by-step directions
+- **Metadata** - When visible:
+  - Servings/yield
+  - Prep time
+  - Cook time
+  - Author
+  - Cuisine type
+- **Summary** - AI-generated recipe overview
+
+Implemented in `/home/daytona/workspace/source/src/app/api/parseRecipeFromImage/route.ts:44-226`.
+
+## Processing Pipeline
+
+### Client-Side
+
+<Steps>
+  <Step title="File validation">
+    Check file type and size before uploading.
+  </Step>
+  
+  <Step title="Preview generation">
+    Convert image to base64 data URL for preview.
+  </Step>
+  
+  <Step title="Upload to API">
+    Send image as multipart/form-data.
+  </Step>
+</Steps>
+
+Client logic in `/home/daytona/workspace/source/src/components/search/recipe-search-form.tsx:122-155`.
+
+### Server-Side
+
+<Steps>
+  <Step title="Receive upload">
+    Parse multipart/form-data and extract image file.
+  </Step>
+  
+  <Step title="Convert to base64">
+    Transform image to base64 data URL for AI model.
+  </Step>
+  
+  <Step title="Vision API call">
+    Send to AI vision model (Groq) for analysis.
+  </Step>
+  
+  <Step title="Extract structured data">
+    Parse AI response into standard recipe format.
+  </Step>
+  
+  <Step title="Return results">
+    Send structured recipe data back to client.
+  </Step>
+</Steps>
+
+Server processing in `/home/daytona/workspace/source/src/app/api/parseRecipeFromImage/route.ts:102-119`.
+
+## Image Requirements
+
+For best results, ensure images:
+
+### Are Clear and Readable
+- Text should be in focus
+- Adequate lighting and contrast
+- Minimal glare or shadows
+- Straight orientation (not rotated)
+
+### Contain Complete Information
+- Full ingredient list visible
+- All instruction steps shown
+- No text cut off at edges
+
+### Have Good Resolution
+- Minimum 800x600 recommended
+- Higher resolution improves accuracy
+- Avoid heavily compressed images
+
+<Tip>
+For multi-page recipes, combine pages into a single image or parse each page separately, then manually combine the results.
+</Tip>
+
+## Error Handling
+
+Common errors and solutions:
+
+### ERR_INVALID_FILE_TYPE
+**Cause**: Unsupported file format
+**Solution**: Convert to JPG, PNG, WEBP, or GIF
+
+### ERR_FILE_TOO_LARGE
+**Cause**: Image exceeds 10MB
+**Solution**: Compress or resize the image
+
+### ERR_NO_RECIPE_FOUND
+**Cause**: AI couldn't extract recipe text
+**Solutions**:
+- Improve image quality
+- Ensure recipe text is visible
+- Try a different image
+
+### ERR_RATE_LIMIT
+**Cause**: Too many requests
+**Solution**: Wait before trying again (retry-after timestamp provided)
+
+Error codes in `/home/daytona/workspace/source/src/app/api/parseRecipeFromImage/route.ts:129-161`.
+
+## Response Format
+
+```json
+{
+  "success": true,
+  "title": "Chocolate Chip Cookies",
+  "ingredients": [
+    {
+      "groupName": "Main",
+      "ingredients": [
+        {
+          "amount": "2",
+          "units": "cups",
+          "ingredient": "flour"
+        }
+      ]
+    }
+  ],
+  "instructions": [
+    "Preheat oven to 350°F",
+    "Mix dry ingredients"
+  ],
+  "imageData": "data:image/jpeg;base64,...",
+  "imageFilename": "recipe-card.jpg"
+}
+```
+
+## Image Storage
+
+Parsed images are stored:
+
+- **Base64 in localStorage** - For recipe preview
+- **Filename preserved** - Original name retained
+- **Source reference** - Stored as `image:filename`
+
+This enables:
+- Recipe thumbnail display
+- Source tracking
+- Re-access without re-upload
+
+<Note>
+Images are stored locally in your browser. They are not uploaded to external servers beyond the initial parsing request.
+</Note>
+
+## AI Model
+
+Mizen uses Groq's vision API for image parsing:
+
+- **Provider**: Groq
+- **Model**: Vision-enabled model
+- **Input**: Base64-encoded images
+- **Output**: Structured JSON recipe data
+
+## Limitations
+
+### Text Recognition
+- Handwritten recipes may have lower accuracy
+- Unusual fonts may cause parsing issues
+- Decorative text can confuse the AI
+
+### Image Quality
+- Blurry images reduce accuracy
+- Low contrast makes text harder to read
+- Heavy compression loses detail
+
+### Language Support
+- Optimized for English recipes
+- Other languages may work but with reduced accuracy
+
+### API Dependencies
+- Requires valid Groq API key
+- Subject to API rate limits
+- Network connection required
+
+<Tip>
+For frequently used recipes, consider re-parsing from the original URL instead of images when possible. URL parsing is faster and more accurate.
+</Tip>
+
+## Performance
+
+- **Typical parse time**: 3-5 seconds
+- **Network upload**: ~1 second (depends on image size)
+- **AI processing**: ~2-4 seconds
+- **Timeout**: 2 minutes maximum
+
+## Privacy
+
+Image parsing privacy considerations:
+
+- Images sent to Groq API for processing
+- No permanent storage on Mizen servers
+- Base64 data stored in browser localStorage only
+- Can be cleared by user at any time

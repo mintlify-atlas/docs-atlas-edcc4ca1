@@ -1,0 +1,682 @@
+---
+title: Error Handling System
+description: Comprehensive error handling, logging, and user feedback in Mizen
+---
+
+## Overview
+
+Mizen implements a robust error handling system that provides:
+- **Structured error responses** across all API endpoints
+- **User-friendly error messages** with actionable guidance
+- **Client-side error logging** for debugging
+- **Consistent error codes** for programmatic handling
+- **Retry functionality** with rate limit support
+
+## Error Response Structure
+
+All API routes return a consistent response format:
+
+### Success Response
+
+```typescript
+{
+  success: true,
+  data: any  // Varies by endpoint
+}
+```
+
+### Error Response
+
+```typescript
+{
+  success: false,
+  error: {
+    code: string,          // Machine-readable error code
+    message: string,       // User-friendly message
+    retryAfter?: number    // Optional: timestamp for rate limits
+  }
+}
+```
+
+## Error Codes
+
+### Standard Error Codes
+
+**Defined in `src/utils/formatError.ts:27`**
+
+| Code | When It Occurs | User Message |
+|------|----------------|-------------|
+| `ERR_INVALID_URL` | URL doesn't pass validation | "That doesn't look like a valid URL" |
+| `ERR_UNSUPPORTED_DOMAIN` | Site not supported | "We don't support this website yet" |
+| `ERR_FETCH_FAILED` | Network or scraping fetch fails | "We couldn't reach that page" |
+| `ERR_NO_RECIPE_FOUND` | Scraper/AI returns no data | "No recipe found on this page" |
+| `ERR_AI_PARSE_FAILED` | AI response is invalid | "We found the page but couldn't extract the recipe" |
+| `ERR_TIMEOUT` | Long response time or crash | "That website is taking too long" |
+| `ERR_RATE_LIMIT` | Too many requests | "Too many requests" |
+| `ERR_API_UNAVAILABLE` | AI service down | "Our service is temporarily down" |
+| `ERR_UNKNOWN` | Catch-all for uncaught errors | "Something went wrong" |
+| `ERR_INVALID_FILE_TYPE` | Wrong image format | "Please select a valid image file" |
+| `ERR_FILE_TOO_LARGE` | Image exceeds 10MB | "Image size must be less than 10MB" |
+| `ERR_NOT_A_URL` | Input is not a URL | "Paste a recipe URL" |
+| `ERR_FEEDBACK_SUBMIT_FAILED` | Feedback submission fails | "Failed to submit feedback" |
+| `ERR_FEEDBACK_UPLOAD_FAILED` | Screenshot upload fails | "Failed to upload screenshots" |
+
+### Code Constants
+
+```typescript
+// src/utils/formatError.ts:27
+
+export const ERROR_CODES = {
+  ERR_INVALID_URL: 'ERR_INVALID_URL',
+  ERR_UNSUPPORTED_DOMAIN: 'ERR_UNSUPPORTED_DOMAIN',
+  ERR_FETCH_FAILED: 'ERR_FETCH_FAILED',
+  ERR_NO_RECIPE_FOUND: 'ERR_NO_RECIPE_FOUND',
+  ERR_AI_PARSE_FAILED: 'ERR_AI_PARSE_FAILED',
+  ERR_TIMEOUT: 'ERR_TIMEOUT',
+  ERR_UNKNOWN: 'ERR_UNKNOWN',
+  ERR_RATE_LIMIT: 'ERR_RATE_LIMIT',
+  ERR_API_UNAVAILABLE: 'ERR_API_UNAVAILABLE',
+  // ... more codes
+} as const;
+```
+
+## Enhanced Error Details
+
+### Error Information Structure
+
+```typescript
+// src/utils/formatError.ts:10
+
+export interface EnhancedErrorInfo {
+  userMessage: string;          // Short, friendly message
+  detailedExplanation: string;  // Longer explanation of what went wrong
+  suggestions: string[];        // Array of actionable suggestions
+  hasSourcePage: boolean;       // Whether "Visit page" action should be shown
+}
+```
+
+### Example: Invalid URL Error
+
+```typescript
+// src/utils/formatError.ts:64
+
+[ERROR_CODES.ERR_INVALID_URL]: {
+  userMessage: "That doesn't look like a valid URL",
+  detailedExplanation: 'Double-check the URL you pasted — it should start with http:// or https://',
+  suggestions: [
+    'Make sure to include http:// or https://',
+    'Check for typos in the URL',
+    "Try copying the URL directly from your browser's address bar",
+    'Ensure the URL is complete and not truncated',
+  ],
+  hasSourcePage: false,
+}
+```
+
+### Example: Fetch Failed Error
+
+```typescript
+// src/utils/formatError.ts:87
+
+[ERROR_CODES.ERR_FETCH_FAILED]: {
+  userMessage: "We couldn't reach that page",
+  detailedExplanation: 'The site may be down or blocking our request. Try visiting the page directly.',
+  suggestions: [
+    'Check your internet connection',
+    'The website might be down - try again later',
+    'Try a different recipe site',
+    'Some sites block automated access - try manually copying the recipe content',
+  ],
+  hasSourcePage: true,  // Allow user to visit the page
+}
+```
+
+## Backend Error Handling
+
+### API Route Error Handling Pattern
+
+**Example from `/api/parseRecipe` (`src/app/api/parseRecipe/route.ts:49`)**
+
+```typescript
+export async function POST(req: NextRequest): Promise<Response> {
+  try {
+    const { url } = await req.json();
+
+    // Input validation
+    if (!url || typeof url !== 'string') {
+      return NextResponse.json(
+        formatError(
+          ERROR_CODES.ERR_INVALID_URL,
+          'URL is required and must be a string',
+        ),
+      );
+    }
+
+    // URL format validation
+    try {
+      new URL(url);
+    } catch {
+      return NextResponse.json(
+        formatError(ERROR_CODES.ERR_INVALID_URL, 'Invalid URL format'),
+      );
+    }
+
+    // Parse recipe
+    const result = await parseRecipeFromUrl(url);
+
+    // Handle parsing errors
+    if (!result.success || !result.data) {
+      // Categorize error type
+      if (result.error?.includes('rate limit')) {
+        return NextResponse.json(
+          formatError(
+            ERROR_CODES.ERR_RATE_LIMIT,
+            'Too many requests',
+            result.retryAfter
+          ),
+        );
+      }
+      // ... more error categorization
+    }
+
+    // Return success
+    return NextResponse.json({
+      success: true,
+      ...result.data,
+    });
+  } catch (error) {
+    // Catch-all error handling
+    console.error('[API /parseRecipe] Unexpected error:', error);
+    return NextResponse.json(
+      formatError(ERROR_CODES.ERR_UNKNOWN, 'An unexpected error occurred'),
+    );
+  }
+}
+```
+
+### Error Categorization Logic
+
+**From `src/app/api/parseRecipe/route.ts:82`**
+
+```typescript
+if (!result.success || !result.data) {
+  let errorCode: string = ERROR_CODES.ERR_NO_RECIPE_FOUND;
+  let errorMessage = 'Could not extract recipe from this page';
+
+  if (result.error) {
+    // Rate limit detection
+    if (
+      result.error === 'ERR_RATE_LIMIT' ||
+      result.error.includes('rate limit') ||
+      result.error.includes('quota')
+    ) {
+      errorCode = ERROR_CODES.ERR_RATE_LIMIT;
+      errorMessage = 'Too many requests';
+      return NextResponse.json(
+        formatError(errorCode, errorMessage, result.retryAfter),
+      );
+    }
+    // Timeout detection
+    else if (
+      result.error.includes('timeout') ||
+      result.error.includes('abort')
+    ) {
+      errorCode = ERROR_CODES.ERR_TIMEOUT;
+      errorMessage = 'Request timed out';
+    }
+    // Network error detection
+    else if (
+      result.error.includes('fetch') ||
+      result.error.includes('Failed to fetch')
+    ) {
+      errorCode = ERROR_CODES.ERR_FETCH_FAILED;
+      errorMessage = 'Could not connect to recipe site';
+    }
+  }
+
+  return NextResponse.json(formatError(errorCode, errorMessage));
+}
+```
+
+## Client-Side Error Handling
+
+### Error Handler Hook
+
+**Location: `src/hooks/useRecipeErrorHandler.ts`**
+
+```typescript
+import { ERROR_CODES, ERROR_MESSAGES } from '@/utils/formatError';
+
+export const useRecipeErrorHandler = () => {
+  const handle = (code: string): string => {
+    switch (code) {
+      case ERROR_CODES.ERR_INVALID_URL:
+        return ERROR_MESSAGES[ERROR_CODES.ERR_INVALID_URL];
+      case ERROR_CODES.ERR_UNSUPPORTED_DOMAIN:
+        return ERROR_MESSAGES[ERROR_CODES.ERR_UNSUPPORTED_DOMAIN];
+      case ERROR_CODES.ERR_FETCH_FAILED:
+        return ERROR_MESSAGES[ERROR_CODES.ERR_FETCH_FAILED];
+      // ... more cases
+      default:
+        return ERROR_MESSAGES[ERROR_CODES.ERR_UNKNOWN];
+    }
+  };
+
+  return { handle };
+};
+```
+
+### Usage in Components
+
+```typescript
+import { useRecipeErrorHandler } from '@/hooks/useRecipeErrorHandler';
+
+function SearchForm() {
+  const [error, setError] = useState<string | null>(null);
+  const errorHandler = useRecipeErrorHandler();
+
+  const handleSubmit = async (url: string) => {
+    try {
+      const response = await fetch('/api/parseRecipe', {
+        method: 'POST',
+        body: JSON.stringify({ url }),
+      });
+
+      const data = await response.json();
+
+      if (!data.success) {
+        // Handle error
+        const errorMessage = errorHandler.handle(data.error.code);
+        setError(errorMessage);
+        
+        // Log to localStorage
+        errorLogger.log(data.error.code, data.error.message, url);
+        return;
+      }
+
+      // Success - handle data
+    } catch (err) {
+      setError('An unexpected error occurred');
+    }
+  };
+}
+```
+
+## Error Logging System
+
+### Client-Side Error Logger
+
+**Location: `src/utils/errorLogger.ts`**
+
+```typescript
+interface ErrorLog {
+  timestamp: string;    // ISO 8601 timestamp
+  code: string;         // Error code
+  message: string;      // Error message
+  url?: string;         // Recipe URL (if applicable)
+  userAgent: string;    // Browser user agent
+}
+
+const ERROR_LOG_KEY = 'parse-n-plate-error-logs';
+const MAX_ERROR_LOGS = 50;  // Keep only last 50 errors
+
+export const errorLogger = {
+  /**
+   * Log an error to localStorage for debugging
+   */
+  log: (code: string, message: string, url?: string) => {
+    try {
+      const errorLog: ErrorLog = {
+        timestamp: new Date().toISOString(),
+        code,
+        message,
+        url,
+        userAgent: navigator.userAgent,
+      };
+
+      const existingLogs = errorLogger.getLogs();
+      existingLogs.unshift(errorLog);  // Add to beginning
+
+      // Keep only last 50 errors
+      if (existingLogs.length > MAX_ERROR_LOGS) {
+        existingLogs.splice(MAX_ERROR_LOGS);
+      }
+
+      localStorage.setItem(ERROR_LOG_KEY, JSON.stringify(existingLogs));
+      console.error('Error logged:', errorLog);
+    } catch (error) {
+      console.error('Failed to log error to localStorage:', error);
+    }
+  },
+
+  /**
+   * Get all error logs from localStorage
+   */
+  getLogs: (): ErrorLog[] => {
+    try {
+      const logs = localStorage.getItem(ERROR_LOG_KEY);
+      return logs ? JSON.parse(logs) : [];
+    } catch (error) {
+      console.error('Failed to get error logs:', error);
+      return [];
+    }
+  },
+
+  /**
+   * Clear all error logs
+   */
+  clear: () => {
+    localStorage.removeItem(ERROR_LOG_KEY);
+  },
+
+  /**
+   * Export error logs as JSON string
+   */
+  export: (): string => {
+    const logs = errorLogger.getLogs();
+    return JSON.stringify(logs, null, 2);
+  },
+};
+```
+
+### Error Log Features
+
+1. **Automatic rotation** — Keeps only last 50 errors to prevent localStorage bloat
+2. **Structured data** — Timestamp, code, message, URL, user agent
+3. **Console integration** — Also logs to browser console for immediate debugging
+4. **Export functionality** — Export logs as JSON for sharing with team
+5. **Persistent storage** — Survives page refreshes and browser sessions
+
+### Accessing Error Logs
+
+**In browser console:**
+```javascript
+// Get all error logs
+const logs = errorLogger.getLogs();
+console.table(logs);
+
+// Export for debugging
+const exported = errorLogger.export();
+console.log(exported);
+
+// Clear all logs
+errorLogger.clear();
+```
+
+## Rate Limiting
+
+### Rate Limit Error Response
+
+```typescript
+// When rate limited, API returns:
+{
+  success: false,
+  error: {
+    code: 'ERR_RATE_LIMIT',
+    message: 'Too many requests',
+    retryAfter: 1679419200000  // Unix timestamp in milliseconds
+  }
+}
+```
+
+### Client-Side Rate Limit Handling
+
+```typescript
+if (data.error.code === 'ERR_RATE_LIMIT') {
+  const retryAfter = data.error.retryAfter;
+  const now = Date.now();
+  const waitTime = Math.ceil((retryAfter - now) / 1000); // seconds
+
+  setError(`Rate limited. Try again in ${waitTime} seconds`);
+
+  // Optionally, set a timer to auto-retry
+  setTimeout(() => {
+    // Retry the request
+  }, waitTime * 1000);
+}
+```
+
+## Error Display Component
+
+### Visual Error Display
+
+**From TECHNICAL_SUMMARY.md:**
+
+```typescript
+// src/components/ui/error-display.tsx (conceptual)
+
+interface ErrorDisplayProps {
+  code: string;
+  message: string;
+  onRetry?: () => void;
+}
+
+export function ErrorDisplay({ code, message, onRetry }: ErrorDisplayProps) {
+  const errorDetails = getErrorDetails(code);
+
+  return (
+    <div className="error-card" role="alert" aria-live="assertive">
+      {/* Error icon */}
+      <ErrorIcon />
+
+      {/* User message */}
+      <h3>{errorDetails.userMessage}</h3>
+
+      {/* Detailed explanation */}
+      <p>{errorDetails.detailedExplanation}</p>
+
+      {/* Suggestions */}
+      <ul>
+        {errorDetails.suggestions.map((suggestion, i) => (
+          <li key={i}>{suggestion}</li>
+        ))}
+      </ul>
+
+      {/* Retry button */}
+      {onRetry && (
+        <button onClick={onRetry} aria-label="Try again">
+          Try Again
+        </button>
+      )}
+
+      {/* Visit source page (if applicable) */}
+      {errorDetails.hasSourcePage && (
+        <a href={sourceUrl} target="_blank" rel="noopener noreferrer">
+          Visit Page
+        </a>
+      )}
+    </div>
+  );
+}
+```
+
+### Accessibility Features
+
+- **ARIA labels** — Proper `role="alert"` and `aria-live="assertive"`
+- **Keyboard navigation** — All buttons/links keyboard accessible
+- **Screen reader support** — Error messages announced to screen readers
+- **Visual feedback** — Red theme, clear error icons
+
+## Error Prevention
+
+### Input Validation
+
+**URL Validation (`src/app/api/urlValidator/route.ts`):**
+
+```typescript
+// 1. URL format validation
+try {
+  const urlObj = new URL(url);
+} catch {
+  return formatError(ERROR_CODES.ERR_INVALID_URL, 'Invalid URL format');
+}
+
+// 2. Protocol validation
+if (!['http:', 'https:'].includes(urlObj.protocol)) {
+  return formatError(ERROR_CODES.ERR_INVALID_URL, 'URL must use HTTP or HTTPS');
+}
+
+// 3. Domain validation (if needed)
+if (BLOCKED_DOMAINS.includes(urlObj.hostname)) {
+  return formatError(ERROR_CODES.ERR_UNSUPPORTED_DOMAIN, 'Domain not supported');
+}
+```
+
+### Timeout Handling
+
+**API Request Timeouts:**
+
+```typescript
+// Set timeout on fetch requests
+const controller = new AbortController();
+const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 seconds
+
+try {
+  const response = await fetch(url, { signal: controller.signal });
+  clearTimeout(timeoutId);
+  // ... process response
+} catch (error) {
+  if (error.name === 'AbortError') {
+    return formatError(ERROR_CODES.ERR_TIMEOUT, 'Request timed out');
+  }
+  throw error;
+}
+```
+
+## Error Recovery
+
+### Retry Functionality
+
+**User-Initiated Retry:**
+
+```typescript
+function RecipePage() {
+  const [error, setError] = useState<ErrorResponse | null>(null);
+
+  const handleRetry = () => {
+    setError(null); // Clear error state
+    // Retry the original operation
+    parseRecipe(url);
+  };
+
+  if (error) {
+    return <ErrorDisplay error={error} onRetry={handleRetry} />;
+  }
+}
+```
+
+**Automatic Retry (Future):**
+
+```typescript
+// Exponential backoff for transient errors
+async function fetchWithRetry(url: string, maxRetries = 3) {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await fetch(url);
+    } catch (error) {
+      if (i === maxRetries - 1) throw error;
+      await new Promise(resolve => setTimeout(resolve, 2 ** i * 1000));
+    }
+  }
+}
+```
+
+### Graceful Degradation
+
+**Fallback Strategies:**
+
+1. **JSON-LD fails** → Try AI parsing
+2. **AI parsing fails** → Try Python scraper (legacy)
+3. **All parsing fails** → Show error with "Visit Page" option
+4. **Image extraction fails** → Continue without images
+5. **Substitutions fail** → Recipe still usable without them
+
+## Debugging Error Handling
+
+### Console Logging
+
+**Server-side (API routes):**
+```typescript
+console.error('[API /parseRecipe] Error:', {
+  code: error.code,
+  message: error.message,
+  url: req.url,
+  timestamp: new Date().toISOString(),
+});
+```
+
+**Client-side:**
+```typescript
+console.error('Error logged:', {
+  timestamp: errorLog.timestamp,
+  code: errorLog.code,
+  message: errorLog.message,
+  url: errorLog.url,
+});
+```
+
+### Error Log Analysis
+
+**Viewing error patterns:**
+```javascript
+// In browser console
+const logs = errorLogger.getLogs();
+
+// Count errors by code
+const errorCounts = logs.reduce((acc, log) => {
+  acc[log.code] = (acc[log.code] || 0) + 1;
+  return acc;
+}, {});
+
+console.table(errorCounts);
+
+// Find most common error
+const mostCommon = Object.entries(errorCounts)
+  .sort(([,a], [,b]) => b - a)[0];
+console.log('Most common error:', mostCommon);
+```
+
+## Testing Error Handling
+
+### Test Error Scenarios
+
+1. **Invalid URLs** — Test various malformed URLs
+2. **Unsupported sites** — Sites without JSON-LD or recipe content
+3. **Network failures** — Simulate offline/slow connections
+4. **AI service outages** — Test when Groq API is down
+5. **Rate limiting** — Test behavior when rate limited
+6. **Timeout scenarios** — Very slow-loading pages
+7. **Malformed responses** — Invalid JSON from AI
+8. **Large files** — Images exceeding 10MB
+
+### Manual Testing
+
+**Test invalid URLs:**
+```bash
+curl -X POST http://localhost:3000/api/parseRecipe \
+  -H "Content-Type: application/json" \
+  -d '{"url": "not-a-url"}'
+
+# Expected: ERR_INVALID_URL
+```
+
+**Test timeout:**
+```bash
+# Use a slow-loading URL
+curl -X POST http://localhost:3000/api/parseRecipe \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://httpstat.us/200?sleep=15000"}'
+
+# Expected: ERR_TIMEOUT
+```
+
+## Future Improvements
+
+**From TECHNICAL_SUMMARY.md:**
+
+1. **Sentry integration** — Real-time error tracking in production
+2. **Error analytics** — Track error frequency and user impact
+3. **Automatic retries** — Retry transient errors automatically
+4. **Better error messages** — Context-aware suggestions
+5. **Error reporting UI** — Allow users to report errors with screenshots
+6. **Performance monitoring** — Track API response times and failures

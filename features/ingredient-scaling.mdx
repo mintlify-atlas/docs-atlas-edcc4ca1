@@ -1,0 +1,187 @@
+---
+title: Ingredient Scaling
+description: Adjust recipe servings and scale ingredients with intelligent fraction handling
+---
+
+Mizen automatically scales ingredient quantities when you adjust servings, with smart handling of fractions and measurements.
+
+## How It Works
+
+The scaling system supports two modes depending on whether the recipe specifies original servings:
+
+### Servings Mode
+
+When the recipe includes a servings count, you can adjust to a specific number of servings:
+
+<Steps>
+  <Step title="View current servings">
+    Look for the servings indicator in the Ingredients header (e.g., "Serves 4").
+  </Step>
+  
+  <Step title="Open the scaling slider">
+    Click the servings button to reveal the adjustment slider.
+  </Step>
+  
+  <Step title="Adjust servings">
+    Drag the slider or type a new number. The range is original ±5 servings (minimum 1).
+  </Step>
+  
+  <Step title="Reset to original">
+    Click the X button to return to the original serving size.
+  </Step>
+</Steps>
+
+### Multiplier Mode
+
+When no original servings are available, use multiplier mode:
+
+- Scale from **0.5x** (half) to **4x** (quadruple)
+- Supports decimal multipliers (0.5, 1.5, 2.5, etc.)
+- Default is **1x** (original amounts)
+
+Implemented in `/home/daytona/workspace/source/src/components/ingredients/ingredients-header.tsx:54-75`.
+
+## Scaling Intelligence
+
+### Fraction Handling
+
+Mizen automatically converts between decimals and cooking-friendly fractions:
+
+**Supported fractions**:
+- ½, ⅓, ⅔, ¼, ¾
+- ⅕, ⅖, ⅗, ⅘
+- ⅙, ⅚
+- ⅛, ⅜, ⅝, ⅞
+
+**Example**: Scaling "1½ cups" by 2x becomes "3 cups", not "3.0 cups".
+
+Fraction parsing logic in `/home/daytona/workspace/source/src/utils/ingredientScaler.ts:16-51`.
+
+### Range Scaling
+
+Recipes often use ranges ("2-3 cups"). Mizen scales both values:
+
+- **Original**: 2-3 cups
+- **Scaled 2x**: 4-6 cups
+- **Scaled 0.5x**: 1-1½ cups
+
+Implemented in `/home/daytona/workspace/source/src/utils/ingredientScaler.ts:222-255`.
+
+### Mixed Number Support
+
+Handles complex measurements:
+
+- "1 ½ cups" (space-separated)
+- "1½ cups" (no space)
+- "1.5 cups" (decimal notation)
+
+All formats scale correctly and output in the most readable format.
+
+### Non-Scalable Items
+
+Some ingredients don't scale:
+
+- "As needed"
+- "To taste"
+- Text-only ingredients without amounts
+
+These items remain unchanged regardless of scaling factor.
+
+Check in `/home/daytona/workspace/source/src/utils/ingredientScaler.ts:57-74`.
+
+## UI Components
+
+### Servings Slider
+
+The slider provides visual and tactile feedback:
+
+- **Visual fill** - Blue progress bar shows current value
+- **Handle** - Large touch target (36px) for easy dragging
+- **Live preview** - See scaled amounts while dragging
+- **Smooth animation** - Spring physics for natural feel
+
+### Input Field
+
+Type exact values for precise control:
+
+- **Validation** - Only allows valid numbers
+- **Auto-format** - Rounds to nearest 0.5 in multiplier mode
+- **Range limits** - Prevents invalid values (min 1, max 99)
+
+Implemented in `/home/daytona/workspace/source/src/components/ingredients/ingredients-header.tsx:128-204`.
+
+## Scaling Algorithm
+
+### Basic Scaling
+
+```typescript
+const scaleFactor = newServings / originalServings;
+const scaledAmount = originalAmount * scaleFactor;
+```
+
+### Fraction Formatting
+
+<Steps>
+  <Step title="Extract whole and decimal parts">
+    `1.75` becomes `whole = 1` and `decimal = 0.75`
+  </Step>
+  
+  <Step title="Match decimal to fraction">
+    `0.75` matches to `¾` in the fraction map
+  </Step>
+  
+  <Step title="Combine for display">
+    Output: `1¾` (no space for clean display)
+  </Step>
+</Steps>
+
+Fraction formatting in `/home/daytona/workspace/source/src/utils/ingredientScaler.ts:122-154`.
+
+## Performance
+
+Scaling is optimized for real-time interaction:
+
+- Uses React transitions for smooth updates
+- Batches updates during drag operations
+- Debounces input field changes
+- Caches parsed ingredient values
+
+<Note>
+All scaling calculations happen client-side. No API calls are made when adjusting servings.
+</Note>
+
+## Ingredient Groups
+
+Recipes with ingredient groups ("For the dough", "For the sauce") scale each group independently:
+
+```typescript
+groups.map(group => ({
+  ...group,
+  ingredients: group.ingredients.map(ing => 
+    scaleIngredient(ing, scaleFactor)
+  )
+}))
+```
+
+Group scaling logic in `/home/daytona/workspace/source/src/utils/ingredientScaler.ts:276-294`.
+
+## Edge Cases
+
+### Very Small Amounts
+
+Amounts below 0.01 display as "< ⅛" to avoid confusion.
+
+### Maximum Values
+
+Scaling is capped at 99 servings or 4x multiplier to prevent unrealistic amounts.
+
+### Invalid Inputs
+
+The system validates and auto-corrects:
+- Empty inputs reset to current value
+- Out-of-range values clamp to valid range
+- Non-numeric input is rejected
+
+<Tip>
+The reset button (X) appears only when the current value differs from the original, providing a quick way to undo scaling changes.
+</Tip>

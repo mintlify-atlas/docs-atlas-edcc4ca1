@@ -1,0 +1,506 @@
+---
+title: Tech Stack
+description: Technologies, frameworks, and dependencies powering Mizen
+---
+
+## Overview
+
+Mizen is built with modern web technologies focusing on performance, developer experience, and maintainability. The stack emphasizes TypeScript safety, React 19 features, and AI-powered recipe parsing.
+
+## Core Technologies
+
+### Frontend Framework
+
+**React 19.2.3**
+- Latest React version with improved concurrency features
+- Functional components only (no class components)
+- Hooks-based state management
+- Server and client components via Next.js
+
+**Next.js 16.1.1**
+- App Router architecture (not Pages Router)
+- Server-side rendering (SSR)
+- API routes for backend logic
+- File-based routing
+- Built-in optimization (images, fonts, scripts)
+
+### Language
+
+**TypeScript 5.x**
+- Strict mode enabled
+- Explicit typing required (no `any` unless necessary)
+- Interface definitions for all complex data structures
+- Type safety across frontend and backend
+
+**Configuration:**
+```json
+// From AGENTS.md
+- Strict types; avoid `any`
+- Define interfaces for complex data
+- Functional components only
+```
+
+### Styling
+
+**Tailwind CSS 4.x**
+- Utility-first CSS framework
+- Custom design tokens in `globals.css`
+- JIT (Just-In-Time) compilation
+- PostCSS plugin: `@tailwindcss/postcss`
+
+**CSS Modules**
+- Component-scoped styles
+- Co-located with components
+
+**Additional:**
+- `tw-animate-css` (v1.3.4) — Enhanced animation utilities
+- `tailwind-merge` (v3.3.1) — Utility for merging Tailwind classes
+- `class-variance-authority` (v0.7.1) — Type-safe variant handling
+- `clsx` (v2.1.1) — Conditional className utility
+
+## AI & Parsing
+
+### AI Provider
+
+**Groq SDK (v0.25.0)**
+- Model: `llama-3.3-70b-versatile`
+- Temperature: 0.1 (for consistency)
+- Max output tokens: 4,000
+- Purpose: Recipe extraction from HTML and images
+
+**Alternative AI SDKs (Available but not primary):**
+- `@anthropic-ai/sdk` (v0.71.2) — Claude integration
+- `openai` (v5.6.0) — OpenAI API integration
+
+**Configuration:**
+```bash
+# .env.local
+GROQ_API_KEY=your_api_key_here
+```
+
+### HTML Parsing
+
+**Cheerio (v1.1.0)**
+- Fast, jQuery-like HTML parsing
+- Server-side DOM manipulation
+- Used in `htmlCleaner.ts` for:
+  - Extracting JSON-LD structured data
+  - Removing ads, scripts, navigation
+  - Isolating recipe content
+
+**Axios (v1.10.0)**
+- HTTP client for fetching recipe pages
+- Promise-based requests
+- Timeout and error handling
+
+## UI Components
+
+### Component Library
+
+**Radix UI** (Multiple packages)
+- Unstyled, accessible component primitives
+- Used for:
+  - `@radix-ui/react-dialog` (v1.1.15) — Modals, dialogs
+  - `@radix-ui/react-dropdown-menu` (v2.1.16) — Dropdowns
+  - `@radix-ui/react-popover` (v1.1.15) — Popovers
+  - `@radix-ui/react-select` (v2.2.6) — Select inputs
+  - `@radix-ui/react-tabs` (v1.1.13) — Tab navigation
+  - `@radix-ui/react-tooltip` (v1.2.8) — Tooltips
+  - `@radix-ui/react-slider` (v1.3.6) — Range sliders
+  - `@radix-ui/react-switch` (v1.2.6) — Toggle switches
+  - `@radix-ui/react-progress` (v1.1.8) — Progress bars
+  - `@radix-ui/react-separator` (v1.1.7) — Dividers
+  - `@radix-ui/react-label` (v2.1.8) — Form labels
+  - `@radix-ui/react-avatar` (v1.1.10) — User avatars
+  - `@radix-ui/react-context-menu` (v2.2.16) — Right-click menus
+  - `@radix-ui/react-hover-card` (v1.1.15) — Hover cards
+  - `@radix-ui/react-alert-dialog` (v1.1.15) — Alert dialogs
+  - `@radix-ui/react-navigation-menu` (v1.2.13) — Navigation
+
+**shadcn/ui Pattern**
+- Components built on top of Radix UI
+- Customized with Tailwind CSS
+- Located in `src/components/ui/`
+
+### Icon Libraries
+
+**Solar Icons (v1.0.1)** — Primary icon system
+- `@solar-icons/react`
+- **Usage rule:** Solar Icons only, prefer filled style
+- Example: `import { Heart } from '@solar-icons/react'`
+
+**Alternative (Legacy):**
+- `@phosphor-icons/react` (v2.1.10)
+- `lucide-react` (v0.519.0)
+
+### Specialized UI Components
+
+**Sonner (v2.0.7)**
+- Toast notifications
+- Clean, accessible toast UI
+
+**Vaul (v1.1.2)**
+- Drawer component for mobile
+- Smooth slide-up animations
+
+**cmdk (v1.1.1)**
+- Command palette / search UI
+- Keyboard-driven interface
+
+**Embla Carousel React (v8.6.0)**
+- Carousel/slider component
+- Touch-friendly, performant
+
+**React Swipeable (v7.0.2)**
+- Swipe gesture handling
+- Mobile-friendly interactions
+
+### Animation
+
+**Framer Motion (v12.23.25)**
+- Declarative animations
+- Layout animations
+- Gesture handling
+- Used for page transitions and micro-interactions
+
+### Loading States
+
+**React Loading Skeleton (v3.5.0)**
+- Skeleton screens for loading states
+- Improves perceived performance
+
+## Backend & Data
+
+### Database
+
+**Supabase**
+- PostgreSQL database
+- `@supabase/supabase-js` (v2.93.3) — JavaScript client
+- `@supabase/ssr` (v0.8.0) — Server-side rendering support
+- Authentication and user management
+
+**Configuration:**
+```typescript
+// src/lib/supabaseClient.ts
+import { createClient } from '@supabase/supabase-js'
+
+export const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
+```
+
+### Local Storage
+
+**Browser localStorage API**
+- Client-side recipe storage
+- Recent recipes (max 10)
+- Bookmarked recipes (unlimited)
+- Error logs (last 50)
+- See `src/lib/storage.ts`
+
+### Third-Party Integrations
+
+**Notion (v5.9.0)**
+- `@notionhq/client`
+- Potential for recipe export/sync
+- Admin tools integration
+
+## Development Tools
+
+### Linting & Formatting
+
+**ESLint 9.x**
+- `eslint` — JavaScript/TypeScript linting
+- `eslint-config-next` (v16.1.1) — Next.js specific rules
+- `@eslint/eslintrc` (v3) — Configuration support
+
+**Prettier 3.6.2**
+- Code formatting
+- Consistent style across codebase
+
+**Commands:**
+```bash
+npm run lint      # Lint files
+npm run lint:fix  # Lint and fix
+```
+
+### Git Hooks
+
+**Husky (v9.1.7)**
+- Git hooks management
+- Pre-commit hooks for linting
+- Ensure code quality before commits
+
+**Setup:**
+```bash
+npm run prepare  # Sets up Husky hooks
+```
+
+### Node Version Management
+
+**nvm (Node Version Manager)**
+- Version specified in `.nvmrc`
+- Ensures consistent Node.js version across team
+
+```bash
+nvm install  # Install specified version
+nvm use      # Switch to project version
+```
+
+## Utilities
+
+### Image Processing
+
+**html2canvas-pro (v1.6.3)**
+- Screenshot generation
+- Recipe image capture for sharing
+- Used in feedback system
+
+### Search & History
+
+**Custom implementation**
+- `src/lib/searchHistory.ts` — Search history management
+- localStorage-based persistence
+
+### Data Utilities
+
+**groq (v3.93.0)**
+- GROQ query language support
+- Not to be confused with Groq AI SDK
+- Potential Sanity CMS integration
+
+**agentation (v1.3.2)**
+- Agent-based workflows (experimental)
+- Potential for autonomous recipe parsing agents
+
+## Analytics & Monitoring
+
+### Vercel Integration
+
+**@vercel/analytics (v1.6.1)**
+- Web analytics
+- User behavior tracking
+- Performance metrics
+
+**@vercel/speed-insights (v1.3.1)**
+- Core Web Vitals monitoring
+- Performance tracking
+- Real User Monitoring (RUM)
+
+**Usage:**
+```typescript
+// src/app/layout.tsx
+import { Analytics } from '@vercel/analytics/react'
+import { SpeedInsights } from '@vercel/speed-insights/next'
+
+export default function RootLayout({ children }) {
+  return (
+    <html>
+      <body>
+        {children}
+        <Analytics />
+        <SpeedInsights />
+      </body>
+    </html>
+  )
+}
+```
+
+## Build & Deployment
+
+### Build System
+
+**Next.js Build**
+- Production optimization
+- Tree shaking
+- Code splitting
+- Image optimization
+
+**Commands:**
+```bash
+npm run dev    # Development server (port 3000)
+npm run build  # Production build
+npm run start  # Production server
+```
+
+### Docker Support
+
+**Docker configuration included**
+
+**Commands:**
+```bash
+npm run docker:build  # Build Docker image
+npm run docker:run    # Run container (port 3000)
+```
+
+**Configuration:**
+```dockerfile
+# Uses .env.local for environment variables
+# Exposes port 3000
+```
+
+### Deployment Target
+
+**Vercel (Recommended)**
+- Native Next.js support
+- Serverless functions for API routes
+- Edge runtime support
+- Automatic HTTPS
+- Environment variable management
+
+## Theming
+
+### Theme Management
+
+**next-themes (v0.4.6)**
+- Dark/light mode support
+- System preference detection
+- No flash on page load
+
+**Usage:**
+```typescript
+import { ThemeProvider } from 'next-themes'
+
+<ThemeProvider attribute="class" defaultTheme="system">
+  {children}
+</ThemeProvider>
+```
+
+## Package Management
+
+### Dependencies Overview
+
+**Total dependencies:** 46
+**Dev dependencies:** 11
+
+**Key stats:**
+- React ecosystem: 3 packages
+- Radix UI components: 17 packages
+- AI/ML integrations: 5 packages
+- UI utilities: 10+ packages
+- Build/dev tools: 6 packages
+
+### Version Strategy
+
+- **Caret ranges** (`^`) — Allow minor and patch updates
+- **Pinned versions** — Critical dependencies (React, Next.js)
+- **Regular updates** — Monitor security and feature updates
+
+## Environment Variables
+
+### Required Variables
+
+```bash
+# .env.local
+
+# AI Integration
+GROQ_API_KEY=          # Required for recipe parsing
+
+# Database (if using Supabase)
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=  # Server-side only
+
+# Optional Integrations
+NOTION_API_KEY=        # For Notion integration
+ANTHROPIC_API_KEY=     # Alternative AI provider
+OPENAI_API_KEY=        # Alternative AI provider
+```
+
+### Environment File Structure
+
+```
+.env.local           # Local development (git-ignored)
+.env.production      # Production environment
+.env.example         # Example file for documentation
+```
+
+## Performance Characteristics
+
+### Bundle Size Considerations
+
+- **React 19** — ~120KB (gzipped)
+- **Next.js** — ~80KB runtime (gzipped)
+- **Radix UI** — ~5-10KB per component (tree-shaken)
+- **Framer Motion** — ~30KB (with tree-shaking)
+- **Tailwind CSS** — Varies (purged unused styles)
+
+### Runtime Performance
+
+- **JSON-LD parsing** — Less than 10ms (no AI call)
+- **AI parsing** — 2-5 seconds (depends on Groq API)
+- **HTML cleaning** — ~50-100ms for typical page
+- **localStorage operations** — Less than 5ms
+
+## Browser Support
+
+### Target Browsers
+
+- **Modern browsers** — Chrome, Firefox, Safari, Edge (last 2 versions)
+- **Mobile browsers** — iOS Safari, Chrome Mobile
+- **No IE11 support** — Modern JS/CSS features used
+
+### Required Features
+
+- ES2020+ JavaScript
+- CSS Grid and Flexbox
+- localStorage API
+- Fetch API
+- ResizeObserver (for responsive components)
+
+## Accessibility
+
+### Built-in Support
+
+- **Radix UI** — WCAG 2.1 compliant primitives
+- **Keyboard navigation** — All interactive elements
+- **ARIA attributes** — Proper labeling and roles
+- **Focus management** — Logical tab order
+
+**From AGENTS.md:**
+> Screen reader support, keyboard navigation, high contrast modes planned for future improvements
+
+## Development Experience
+
+### TypeScript Autocomplete
+
+- Full type definitions for all dependencies
+- IntelliSense support in VS Code
+- Type-safe API calls and data structures
+
+### Hot Module Replacement
+
+- Next.js Fast Refresh
+- Instant feedback on changes
+- Preserves component state during development
+
+### Code Organization
+
+- **Strict file structure** — Components, hooks, utils separated
+- **Co-located styles** — CSS Modules with components
+- **Clear naming conventions** — Descriptive, consistent names
+
+## Security
+
+### Dependency Security
+
+- **Regular updates** — Monitor for vulnerabilities
+- **npm audit** — Automated security checks
+- **Version pinning** — Critical packages pinned
+
+### API Key Security
+
+- **Server-side only** — API keys never exposed to client
+- **Environment variables** — Stored securely
+- **No hardcoded secrets** — All keys in .env files
+
+## Future Stack Considerations
+
+**From TECHNICAL_SUMMARY.md:**
+
+1. **Sentry** — Error tracking and monitoring
+2. **Redis** — Caching layer for parsed recipes
+3. **Websockets** — Real-time recipe collaboration
+4. **GraphQL** — Alternative API layer
+5. **tRPC** — Type-safe API calls

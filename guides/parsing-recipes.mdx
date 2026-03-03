@@ -1,0 +1,124 @@
+---
+title: Parsing Recipes
+description: How to parse recipes from URLs and images in Mizen
+---
+
+Mizen allows you to parse recipes from recipe URLs or images using AI-powered extraction. The parser automatically detects ingredients, instructions, cooking times, and more.
+
+## Parsing from URLs
+
+<Steps>
+
+### Enter a recipe URL
+
+On the homepage, you'll see a search bar with a link icon. You can enter a recipe URL in several formats:
+- Full URL: `https://www.allrecipes.com/recipe/12345/my-recipe`
+- Shortened format: `allrecipes.com/recipe/12345/my-recipe` (Mizen adds the `https://` automatically)
+
+### Click "Parse Recipe"
+
+Once you enter a valid URL, a "Parse Recipe" button appears. Click it to start the parsing process.
+
+### Monitor the loading animation
+
+Mizen shows a 3-phase loading animation with a progress bar:
+
+1. **Gathering Resources (0-30%)**: Validating the URL and fetching the recipe page
+2. **Reading the Recipe (30-90%)**: Extracting ingredients, instructions, and metadata using AI
+3. **Plating (90-100%)**: Finalizing the recipe data, including cuisine detection
+
+The final step reveals the detected cuisine type before navigating to the recipe page.
+
+### View your parsed recipe
+
+Once parsing completes, you're automatically navigated to the recipe page where you can view:
+- Recipe title and author
+- AI-generated summary
+- Ingredients with amounts and units
+- Step-by-step instructions with titles
+- Cooking times (prep, cook, total)
+- Servings
+- Cuisine tags
+- Storage and plating guidance
+
+</Steps>
+
+## Parsing from Images
+
+<Steps>
+
+### Switch to image mode
+
+Click the chevron (down arrow) icon in the search bar to toggle from URL mode to image upload mode.
+
+### Select an image
+
+Click the upload field to select an image from your device. Mizen accepts:
+- Common image formats (JPG, PNG, etc.)
+- Maximum file size: 10MB
+
+The image preview appears after selection.
+
+### Parse the image
+
+Click "Parse Recipe from Image" to extract recipe data using AI vision. The same 3-phase loading animation appears.
+
+### Review and save
+
+The parsed recipe opens on the recipe page. The original image is stored with the recipe and can be viewed by clicking the image preview icon next to the source information.
+
+</Steps>
+
+## Search Recent Recipes
+
+When you're in URL mode, typing in the search bar searches through your recently parsed recipes. Results appear in a dropdown showing:
+- Recipe title
+- Brief description
+- Date parsed
+
+Click any result to open that recipe instantly.
+
+## Parsing Features
+
+### What Gets Extracted
+
+Mizen's parser extracts:
+- **Basic Info**: Title, author, source URL, publication date
+- **Timing**: Prep time, cook time, total time
+- **Yield**: Number of servings
+- **Ingredients**: Grouped ingredients with amounts, units, and ingredient names
+- **Instructions**: Step-by-step directions with auto-generated titles
+- **Cuisine Tags**: Automatically detected cuisine types (Italian, Asian, etc.)
+- **Storage Info**: Refrigerator and freezer shelf life
+- **Plating Guidance**: Serving temperature, vessel recommendations, plating notes
+
+### Parsing Methods
+
+Mizen uses a hybrid approach:
+1. **JSON-LD Extraction**: First tries to extract structured recipe data from the page's schema markup (fast, no AI tokens used)
+2. **AI Parsing**: Falls back to AI-powered extraction if JSON-LD is unavailable or incomplete
+3. **AI Enrichment**: Adds storage guidance, plating notes, and cuisine detection using AI
+
+### Error Handling
+
+If parsing fails, Mizen shows clear error messages:
+- **Not a URL**: Input doesn't look like a recipe URL
+- **No Recipe Found**: The page doesn't contain a recipe
+- **Rate Limited**: Too many requests; retry after the displayed time
+- **Unknown Error**: Something unexpected happened
+
+You can cancel parsing at any time by clicking the cancel button in the loading animation.
+
+## Tips for Best Results
+
+<Tip>
+**For URLs**: Use the full recipe page URL, not the homepage or recipe index. Most major recipe sites (AllRecipes, Bon Appetit, Serious Eats, etc.) are supported.
+</Tip>
+
+<Tip>
+**For Images**: Ensure the image is clear and readable. Text should be legible and the recipe should be fully visible in the frame.
+</Tip>
+
+<Tip>
+**Search First**: Before parsing a new recipe, search your recent recipes to avoid duplicates. The search looks through recipe titles and descriptions.
+</Tip>

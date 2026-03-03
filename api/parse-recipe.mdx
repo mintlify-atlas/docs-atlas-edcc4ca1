@@ -1,0 +1,301 @@
+---
+title: 'Parse Recipe from URL'
+api: 'POST /api/parseRecipe'
+description: 'Parse recipe data from any recipe website URL using JSON-LD or AI extraction'
+---
+
+## Overview
+
+The `/api/parseRecipe` endpoint provides a unified interface for parsing recipes from any website. It uses a two-layer approach:
+
+1. **JSON-LD structured data extraction** (fast, reliable, no AI tokens used)
+2. **AI-based parsing of cleaned HTML** (fallback when structured data is not available)
+
+This endpoint works with any recipe website and eliminates the need for site-specific HTML selectors.
+
+## Request
+
+<ParamField body="url" type="string" required>
+  The full URL of the recipe page to parse. Must be a valid HTTP/HTTPS URL.
+  
+  Example: `https://example.com/recipe/chocolate-cake`
+</ParamField>
+
+## Response
+
+### Success Response
+
+<ResponseField name="success" type="boolean" required>
+  Always `true` for successful responses
+</ResponseField>
+
+<ResponseField name="title" type="string" required>
+  The recipe title
+</ResponseField>
+
+<ResponseField name="ingredients" type="array" required>
+  Array of ingredient groups. Each group contains a `groupName` and an array of `ingredients`.
+  
+  <Expandable title="Ingredient Group Structure">
+    <ResponseField name="groupName" type="string">
+      Name of the ingredient group (e.g., "For the sauce", "Main ingredients")
+    </ResponseField>
+    
+    <ResponseField name="ingredients" type="array">
+      Array of ingredient objects
+      
+      <Expandable title="Ingredient Object">
+        <ResponseField name="amount" type="string">
+          Quantity (e.g., "2", "1/2", "2 1/2")
+        </ResponseField>
+        
+        <ResponseField name="units" type="string">
+          Unit of measurement (e.g., "cups", "tablespoons", "grams")
+        </ResponseField>
+        
+        <ResponseField name="ingredient" type="string">
+          Ingredient name (e.g., "all-purpose flour", "unsalted butter")
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="instructions" type="array" required>
+  Array of cooking instruction steps as strings
+</ResponseField>
+
+<ResponseField name="author" type="string">
+  Recipe author name (if available)
+</ResponseField>
+
+<ResponseField name="sourceUrl" type="string">
+  Original source URL of the recipe
+</ResponseField>
+
+<ResponseField name="summary" type="string">
+  AI-generated recipe summary (if available)
+</ResponseField>
+
+<ResponseField name="cuisine" type="array">
+  Array of cuisine tags (e.g., `["Italian", "Mediterranean"]`)
+</ResponseField>
+
+<ResponseField name="servings" type="string">
+  Number of servings or yield (e.g., "4 servings", "12 cookies")
+</ResponseField>
+
+<ResponseField name="prepTimeMinutes" type="number">
+  Preparation time in minutes
+</ResponseField>
+
+<ResponseField name="cookTimeMinutes" type="number">
+  Cooking time in minutes
+</ResponseField>
+
+<ResponseField name="totalTimeMinutes" type="number">
+  Total time in minutes (prep + cook)
+</ResponseField>
+
+<ResponseField name="storageGuide" type="string">
+  Storage instructions for leftovers
+</ResponseField>
+
+<ResponseField name="shelfLife" type="object">
+  Shelf life information
+  
+  <Expandable title="Shelf Life Object">
+    <ResponseField name="fridge" type="number">
+      Days the recipe keeps in the refrigerator
+    </ResponseField>
+    
+    <ResponseField name="freezer" type="number">
+      Days the recipe keeps in the freezer (null if not freezer-friendly)
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="platingNotes" type="string">
+  Plating and presentation suggestions
+</ResponseField>
+
+<ResponseField name="servingVessel" type="string">
+  Recommended serving vessel (e.g., "shallow bowl", "dinner plate")
+</ResponseField>
+
+<ResponseField name="servingTemp" type="string">
+  Ideal serving temperature (e.g., "hot", "warm", "chilled")
+</ResponseField>
+
+<ResponseField name="method" type="string" required>
+  Parsing method used: `"json-ld"` (structured data) or `"ai"` (AI extraction)
+</ResponseField>
+
+### Error Response
+
+<ResponseField name="success" type="boolean">
+  Always `false` for error responses
+</ResponseField>
+
+<ResponseField name="error" type="object">
+  Error details
+  
+  <Expandable title="Error Object">
+    <ResponseField name="code" type="string">
+      Error code (see Error Codes section)
+    </ResponseField>
+    
+    <ResponseField name="message" type="string">
+      Human-readable error message
+    </ResponseField>
+    
+    <ResponseField name="retryAfter" type="number">
+      Timestamp (milliseconds) when to retry after rate limit (only for rate limit errors)
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Error Codes
+
+<ResponseField name="ERR_INVALID_URL">
+  The provided URL is invalid or malformed
+</ResponseField>
+
+<ResponseField name="ERR_FETCH_FAILED">
+  Could not connect to the recipe website
+</ResponseField>
+
+<ResponseField name="ERR_NO_RECIPE_FOUND">
+  No recipe content found on the page
+</ResponseField>
+
+<ResponseField name="ERR_RATE_LIMIT">
+  Too many requests - rate limit exceeded
+</ResponseField>
+
+<ResponseField name="ERR_API_UNAVAILABLE">
+  Service temporarily unavailable
+</ResponseField>
+
+<ResponseField name="ERR_TIMEOUT">
+  Request timed out
+</ResponseField>
+
+<ResponseField name="ERR_UNKNOWN">
+  An unexpected error occurred
+</ResponseField>
+
+## Examples
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://your-domain.com/api/parseRecipe \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://www.allrecipes.com/recipe/10813/best-chocolate-chip-cookies/"
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch('/api/parseRecipe', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    url: 'https://www.allrecipes.com/recipe/10813/best-chocolate-chip-cookies/'
+  })
+});
+
+const data = await response.json();
+
+if (data.success) {
+  console.log('Recipe:', data.title);
+  console.log('Method:', data.method); // 'json-ld' or 'ai'
+  console.log('Ingredients:', data.ingredients);
+  console.log('Instructions:', data.instructions);
+} else {
+  console.error('Error:', data.error.code, data.error.message);
+}
+```
+
+```python Python
+import requests
+
+response = requests.post(
+    'https://your-domain.com/api/parseRecipe',
+    json={'url': 'https://www.allrecipes.com/recipe/10813/best-chocolate-chip-cookies/'}
+)
+
+data = response.json()
+
+if data['success']:
+    print(f"Recipe: {data['title']}")
+    print(f"Method: {data['method']}")
+    print(f"Ingredients: {len(data['ingredients'])} groups")
+    print(f"Instructions: {len(data['instructions'])} steps")
+else:
+    print(f"Error: {data['error']['code']} - {data['error']['message']}")
+```
+
+</CodeGroup>
+
+### Success Response Example
+
+```json
+{
+  "success": true,
+  "title": "Best Chocolate Chip Cookies",
+  "ingredients": [
+    {
+      "groupName": "Main ingredients",
+      "ingredients": [
+        {
+          "amount": "2 1/4",
+          "units": "cups",
+          "ingredient": "all-purpose flour"
+        },
+        {
+          "amount": "1",
+          "units": "cup",
+          "ingredient": "unsalted butter, softened"
+        },
+        {
+          "amount": "2",
+          "units": "large",
+          "ingredient": "eggs"
+        }
+      ]
+    }
+  ],
+  "instructions": [
+    "Preheat oven to 375°F (190°C).",
+    "In a large bowl, cream together butter and sugars until light and fluffy.",
+    "Beat in eggs one at a time, then stir in vanilla."
+  ],
+  "author": "Chef John",
+  "servings": "48 cookies",
+  "prepTimeMinutes": 15,
+  "cookTimeMinutes": 10,
+  "totalTimeMinutes": 25,
+  "cuisine": ["American"],
+  "method": "json-ld"
+}
+```
+
+### Error Response Example
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "ERR_NO_RECIPE_FOUND",
+    "message": "No complete recipe content found on this page"
+  }
+}
+```
+
+<Warning>
+  Rate limits may apply to this endpoint. If you receive an `ERR_RATE_LIMIT` error, check the `retryAfter` timestamp to know when you can retry.
+</Warning>

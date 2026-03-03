@@ -1,80 +1,345 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: Quickstart
+description: Parse your first recipe in under 2 minutes
 ---
 
-## Get started in three steps
+# Quickstart
 
-Get your documentation site running locally and make your first customization.
+This guide will walk you through parsing your first recipe and exploring Mizen's core features.
 
-### Step 1: Set up your local environment
+## Prerequisites
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
+Before you begin, make sure you have:
+
+- A modern web browser (Chrome, Firefox, Safari, or Edge)
+- A recipe URL or image to parse
+- (Optional) A Groq API key for AI-powered features
+
+<Note>
+  Mizen works without an API key for recipes with JSON-LD structured data, but AI enrichment (cuisine tags, storage guidance, ingredient descriptions) requires a Groq API key.
+</Note>
+
+## Step 1: Launch Mizen
+
+Navigate to the Mizen homepage. You'll see a clean landing page with the tagline "Clean recipes, calm cooking."
+
+The search bar accepts two input types:
+
+- **Recipe URLs** - The default mode (link icon)
+- **Recipe images** - Click the chevron icon to switch modes
+
+## Step 2: Parse a recipe from URL
+
+Let's start by parsing a recipe from a website.
+
+<Steps>
+  <Step title="Enter a recipe URL">
+    Paste any recipe URL into the search bar. You can paste the full URL or just the domain path:
     
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
+    ```text
+    https://www.seriouseats.com/recipe/garlic-noodles
+    ```
     
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 2: Deploy your changes
-
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
+    Or use the shorthand:
     
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+    ```text
+    seriouseats.com/recipe/garlic-noodles
+    ```
+    
+    Mizen automatically adds the protocol and validates the URL.
+  </Step>
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+  <Step title="Click 'Parse Recipe'">
+    Once you enter a valid URL, the "Parse Recipe" button appears. Click it to start parsing.
+    
+    You'll see a loading animation with three phases:
+    - **Gathering resources** (0-30%) - Fetching and validating the URL
+    - **Reading the recipe** (30-90%) - Extracting ingredients and instructions
+    - **Plating** (90-100%) - Finalizing metadata and enrichment
+  </Step>
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+  <Step title="View your parsed recipe">
+    After parsing completes (usually 2-5 seconds), you'll be redirected to the recipe page with:
+    
+    - Recipe title and author
+    - Prep, cook, and total time
+    - Servings controls for scaling
+    - Grouped ingredients with descriptions
+    - Step-by-step instructions with titles
+    - Cuisine tags
+    - Storage and plating guidance
+  </Step>
+</Steps>
 
-### Step 3: Go live
+<Warning>
+  If parsing fails, check that:
+  - The URL is accessible and contains a recipe
+  - The website isn't behind a paywall
+  - Your internet connection is stable
+</Warning>
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+## Step 3: Parse a recipe from an image
+
+Mizen can also extract recipes from photos.
+
+<Steps>
+  <Step title="Switch to image mode">
+    Click the chevron icon (▼) in the search bar to switch from URL mode to image mode. The icon changes from a link to an image icon.
+  </Step>
+
+  <Step title="Upload a recipe image">
+    Click "Upload recipe image" to open your file picker. Select a photo of:
+    
+    - A recipe card
+    - A cookbook page
+    - A handwritten recipe
+    - A screenshot of a recipe
+    
+    **Image requirements:**
+    - Format: JPEG, PNG, or other common image formats
+    - Size: Maximum 10MB
+    - Quality: Clear, readable text works best
+  </Step>
+
+  <Step title="Preview and parse">
+    After selecting an image, you'll see a preview. Click "Parse Recipe from Image" to extract the recipe.
+    
+    Image parsing takes slightly longer than URL parsing (5-10 seconds) as the AI vision model reads and interprets the text.
+  </Step>
+
+  <Step title="Review extracted data">
+    The AI extracts:
+    - Recipe title
+    - Full ingredient list with amounts and units
+    - Step-by-step instructions
+    - Any visible timing information
+    
+    If the image quality is poor or text is unclear, some data may be incomplete.
+  </Step>
+</Steps>
+
+## Step 4: Scale ingredients
+
+Now that you have a parsed recipe, let's adjust the servings.
+
+<Steps>
+  <Step title="Find the servings controls">
+    At the top of the ingredients section, you'll see two controls:
+    
+    - **Yield**: Adjust the number of servings (1-10)
+    - **Scale**: Apply a multiplier (1x, 2x, 3x)
+  </Step>
+
+  <Step title="Adjust servings">
+    Click the **+** or **-** buttons to change servings:
+    
+    - Original recipe: 4 servings
+    - Adjusted: 6 servings (1.5x multiplier)
+    
+    All ingredient amounts update instantly:
+    
+    ```text
+    Original: 2 cups flour
+    Scaled:   3 cups flour
+    ```
+    
+    ```text
+    Original: 1½ tsp salt
+    Scaled:   2¼ tsp salt
+    ```
+  </Step>
+
+  <Step title="Apply scale multiplier">
+    Use the scale pills to double or triple the recipe:
+    
+    - **1x**: Original amounts
+    - **2x**: Double all ingredients
+    - **3x**: Triple all ingredients
+    
+    The multiplier works in combination with servings adjustments.
+  </Step>
+
+  <Step title="Reset to original">
+    Click the servings number to reset both servings and multiplier to the original recipe values.
+  </Step>
+</Steps>
+
+<Note>
+  Mizen handles complex fractions and ranges intelligently:
+  - Mixed numbers: 1½ → 3 when doubled
+  - Ranges: 2-3 cups → 4-6 cups when doubled
+  - Unicode fractions: ¼, ½, ¾ display correctly
+</Note>
+
+## Step 5: Follow instructions
+
+The recipe instructions are displayed as titled steps for easy navigation.
+
+**Instruction format:**
+
+```text
+1. Prepare the ingredients
+   Wash and chop all vegetables. Mince the garlic and ginger.
+   Set aside in separate bowls.
+
+2. Heat the pan
+   Heat 2 tablespoons oil in a large skillet over medium-high
+   heat until shimmering, about 2 minutes.
+```
+
+Each step has:
+- A **title** summarizing the action ("Prepare the ingredients")
+- A **detail** section with full instructions
+- (Optional) **Timer information** if the step includes timing
+- (Optional) **Tips** for technique notes
+
+**Using step timers:**
+
+If a step includes timing ("Simmer for 20 minutes"), a timer control appears:
+
+1. Click **Start** to begin the countdown
+2. The timer shows remaining time (MM:SS)
+3. Click **Pause** to stop temporarily
+4. Click **Reset** to return to the original time
+5. An alert sounds when the timer reaches zero
+
+<Note>
+  Multiple timers can run simultaneously for recipes with parallel cooking steps.
+</Note>
+
+## Step 6: Access recent recipes
+
+Your parsed recipes are automatically saved for quick access.
+
+<Steps>
+  <Step title="Return to homepage">
+    Click the Mizen logo or navigate to the homepage.
+  </Step>
+
+  <Step title="Search recent recipes">
+    Start typing in the search bar to see matching recipes from your history:
+    
+    - Type "pasta" to find all pasta recipes
+    - Type "chicken" to find chicken dishes
+    
+    The dropdown shows:
+    - Recipe title
+    - Brief description
+    - Date parsed
+  </Step>
+
+  <Step title="Open a saved recipe">
+    Click any recipe in the dropdown to load it instantly—no re-parsing needed.
+  </Step>
+</Steps>
+
+**Cuisine filtering:**
+
+If recipes have cuisine tags, you can filter by cuisine type:
+
+- Italian, French, Mediterranean
+- Korean, Japanese, Chinese
+- Mexican, Indian, Hawaiian
+
+## Understanding recipe metadata
+
+Mizen enriches recipes with AI-generated metadata:
+
+**Ingredient descriptions:**
+
+Each ingredient includes a brief explanation:
+
+```text
+Gochujang (2 tablespoons)
+"Adds spicy-sweet depth and fermented complexity"
+```
+
+**Substitutions:**
+
+See alternative ingredients:
+
+```text
+Heavy cream (½ cup)
+Substitutions: coconut cream, half-and-half
+```
+
+**Storage guidance:**
+
+Learn how to store leftovers:
+
+```text
+Storage: Store in an airtight container in the refrigerator
+Shelf life: 3 days in fridge, 30 days in freezer
+```
+
+**Plating notes:**
+
+Get serving suggestions:
+
+```text
+Serving vessel: Shallow bowl
+Serving temp: Hot
+Notes: Garnish with fresh herbs and grated parmesan. Serve
+immediately for best texture.
+```
+
+## Troubleshooting
+
+### Recipe doesn't parse
+
+**Problem**: The parser returns "No recipe found"
+
+**Solutions**:
+- Verify the URL contains a recipe (not a recipe index page)
+- Check if the site requires JavaScript to load content
+- Try a different recipe from the same site
+- Use image mode to upload a screenshot instead
+
+### Ingredients not scaling correctly
+
+**Problem**: Ingredient amounts don't update when adjusting servings
+
+**Solutions**:
+- The original recipe may have "as needed" amounts that don't scale
+- Ranges (2-3 cups) scale both minimum and maximum
+- Reset to original servings and try again
+
+### Image parsing fails
+
+**Problem**: Uploaded image doesn't extract a recipe
+
+**Solutions**:
+- Ensure text is clear and readable (not blurry or too small)
+- Try taking a new photo with better lighting
+- Use a higher resolution image if available
+- Manually verify the image contains visible ingredient amounts and instructions
+
+### Missing AI features
+
+**Problem**: No cuisine tags, descriptions, or storage guidance
+
+**Solutions**:
+- Configure a Groq API key in `.env.local`:
+  
+  ```bash
+  GROQ_API_KEY=your_groq_api_key_here
+  ```
+  
+- Get a free API key at [console.groq.com](https://console.groq.com/)
+- Accept model terms in the Groq playground if you see rate limit errors
+
+<Warning>
+  Without a Groq API key, Mizen falls back to JSON-LD-only parsing, which doesn't include AI enrichment features.
+</Warning>
 
 ## Next steps
 
-Now that you have your docs running, explore these key features:
+You've successfully parsed and scaled your first recipe! Here's what to explore next:
 
-<CardGroup cols={2}>
+- Parse recipes from your favorite cooking sites
+- Upload family recipe cards to digitize them
+- Adjust servings for meal prep or scaling recipes
+- Use built-in timers while cooking
+- Build your personal recipe collection
 
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
-</CardGroup>
-
-<Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
-</Note>
+Happy cooking with Mizen!

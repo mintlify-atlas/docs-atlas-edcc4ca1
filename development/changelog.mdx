@@ -1,0 +1,165 @@
+---
+title: Changelog
+description: Recent changes and version history for Mizen
+---
+
+## Recent Updates
+
+This changelog tracks the major changes, improvements, and updates to the Mizen project.
+
+## UI & Design
+
+### Theme Updates
+- Updated color theme from dark green (`#193d34`) to near-black (`#0C0A09`) for improved visual consistency
+- Improved checkbox styling to filled style
+- Enhanced checkbox checkmark positioning
+
+### Component Improvements
+- Improved ClassicSplitView with folder tab style and responsive design
+- Refactored StepDisplay navigation controls for better user experience
+- Simplified ContextPanel styling and layout
+- Improved recipe page spacing and typography
+
+### Navigation & Layout
+- Increased navbar z-index to stay above other elements
+- Cleaned up `.cursorrules` configuration
+
+## Features
+
+### Keyboard Shortcuts
+- Added keyboard shortcuts (⌘1/2/3) for tab navigation
+- Included tooltips to help users discover shortcuts
+
+### Recipe Interactions
+- Added servings reset functionality - click servings value to reset to default
+- Added search functionality to homepage bookmarked recipes
+- Added recipe settings menu with:
+  - Copy link option
+  - Copy plain text option
+- Updated cuisine pills to toggle behavior (removed "All" option)
+- Changed recipe card delete to unsave with confirmation dialog
+
+### Search & Discovery
+- Enhanced homepage with search functionality for bookmarked recipes
+- Improved cuisine filtering with toggle behavior
+
+## Loading & Animation
+
+### Loading States
+- Refactored loading animation with 3-step state display
+- Added progress bar for visual feedback during recipe processing
+- Added cuisine detection and reveal in loading animation
+- Implemented 1.5 second delay before navigation to show final step reveal
+
+### User Experience
+- Removed ingredient animation on check for cleaner interactions
+
+## Image Protection
+
+### Security & User Experience
+- Added image protection to prevent dragging throughout the app
+- Prevented right-click context menu on images
+- Added `draggable="false"` attribute to images
+- Integrated `html2canvas-pro` package for image capture functionality
+
+## Data & API
+
+### Recipe Data Enhancements
+- Added time data (prep, cook, total) to API route responses
+- Added servings data to API routes
+- Pass servings data through all recipe loading components
+- Implemented prep/cook/total time extraction and support
+
+### Data Structure
+- Enhanced recipe data model with comprehensive timing information
+- Improved data flow through component hierarchy
+
+## Ingredients & Steps
+
+### Display Improvements
+- Added step titles to ingredient expanded content
+- Improved step title display (only show meaningful titles)
+- Enhanced ingredient-to-step relationship visualization
+
+### Interaction Changes
+- Removed ingredient animation on check for cleaner UX
+- Streamlined ingredient checking workflow
+
+## Technical Improvements
+
+### Dependencies
+
+Key packages used in the project:
+
+**Frontend Framework**
+- Next.js 16.1.1 (App Router)
+- React 19.2.3
+- TypeScript 5
+
+**UI Components**
+- Radix UI component library
+- Solar Icons 1.0.1
+- Tailwind CSS 4
+- Framer Motion for animations
+
+**Backend & APIs**
+- Anthropic AI SDK
+- OpenAI SDK
+- Groq SDK
+- Supabase for database and authentication
+
+**Development Tools**
+- ESLint 9 with Next.js config
+- Prettier 3.6.2
+- Husky for Git hooks
+
+### Code Quality
+- Implemented Husky pre-commit hooks
+- Enhanced ESLint configuration for TypeScript
+- Prettier formatting with single quote preference
+
+### Build & Deployment
+- Docker support with build and run scripts
+- Production build optimizations
+- Vercel Analytics and Speed Insights integration
+
+## Version Information
+
+**Current Version**: 0.1.0
+
+<Note>
+This is a private project currently in active development. Version numbers follow semantic versioning once released.
+</Note>
+
+## Migration Notes
+
+### Breaking Changes
+
+None currently - project is in initial development phase.
+
+### Deprecations
+
+None currently.
+
+## Contributing to Changelog
+
+When making significant changes:
+
+1. Update the changelog with:
+   - Feature additions
+   - Breaking changes
+   - Important bug fixes
+   - UI/UX improvements
+
+2. Categorize changes appropriately:
+   - UI & Design
+   - Features
+   - Technical Improvements
+   - Bug Fixes
+   - Breaking Changes
+
+3. Include clear, user-focused descriptions
+
+4. Reference issue numbers when applicable
+
+For more information on contributing, see the [Contributing Guide](/development/contributing).

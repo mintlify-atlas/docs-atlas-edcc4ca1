@@ -1,0 +1,262 @@
+---
+title: 'Parse Recipe from Image'
+api: 'POST /api/parseRecipeFromImage'
+description: 'Extract recipe data from uploaded images using AI vision models'
+---
+
+## Overview
+
+The `/api/parseRecipeFromImage` endpoint accepts image uploads (recipe cards, cookbook pages, screenshots) and uses AI vision models to extract recipe data from the image.
+
+**Supported formats:** JPG, PNG, WEBP, GIF
+
+**Maximum file size:** 10MB
+
+## Request
+
+This endpoint accepts `multipart/form-data` requests with an image file.
+
+<ParamField body="image" type="file" required>
+  Image file containing a recipe. Supported formats: JPG, PNG, WEBP, GIF.
+  
+  Maximum file size: 10MB
+</ParamField>
+
+## Response
+
+### Success Response
+
+<ResponseField name="success" type="boolean" required>
+  Always `true` for successful responses
+</ResponseField>
+
+<ResponseField name="title" type="string" required>
+  The recipe title extracted from the image
+</ResponseField>
+
+<ResponseField name="ingredients" type="array" required>
+  Array of ingredient groups. Each group contains a `groupName` and an array of `ingredients`.
+  
+  <Expandable title="Ingredient Group Structure">
+    <ResponseField name="groupName" type="string">
+      Name of the ingredient group (e.g., "For the sauce", "Main ingredients")
+    </ResponseField>
+    
+    <ResponseField name="ingredients" type="array">
+      Array of ingredient objects
+      
+      <Expandable title="Ingredient Object">
+        <ResponseField name="amount" type="string">
+          Quantity (e.g., "2", "1/2", "2 1/2")
+        </ResponseField>
+        
+        <ResponseField name="units" type="string">
+          Unit of measurement (e.g., "cups", "tablespoons", "grams")
+        </ResponseField>
+        
+        <ResponseField name="ingredient" type="string">
+          Ingredient name (e.g., "all-purpose flour", "unsalted butter")
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="instructions" type="array" required>
+  Array of cooking instruction steps as strings
+</ResponseField>
+
+<ResponseField name="summary" type="string">
+  AI-generated recipe summary
+</ResponseField>
+
+<ResponseField name="author" type="string">
+  Recipe author name (if visible in the image)
+</ResponseField>
+
+<ResponseField name="cuisine" type="array">
+  Array of cuisine tags (e.g., `["Italian", "Mediterranean"]`)
+</ResponseField>
+
+<ResponseField name="servings" type="string">
+  Number of servings or yield (e.g., "4 servings", "12 cookies")
+</ResponseField>
+
+<ResponseField name="prepTimeMinutes" type="number">
+  Preparation time in minutes (if visible in the image)
+</ResponseField>
+
+<ResponseField name="cookTimeMinutes" type="number">
+  Cooking time in minutes (if visible in the image)
+</ResponseField>
+
+<ResponseField name="totalTimeMinutes" type="number">
+  Total time in minutes (prep + cook)
+</ResponseField>
+
+<ResponseField name="imageData" type="string">
+  Base64-encoded data URL of the uploaded image for preview purposes
+</ResponseField>
+
+<ResponseField name="imageFilename" type="string">
+  Original filename of the uploaded image
+</ResponseField>
+
+### Error Response
+
+<ResponseField name="success" type="boolean">
+  Always `false` for error responses
+</ResponseField>
+
+<ResponseField name="error" type="object">
+  Error details
+  
+  <Expandable title="Error Object">
+    <ResponseField name="code" type="string">
+      Error code (see Error Codes section)
+    </ResponseField>
+    
+    <ResponseField name="message" type="string">
+      Human-readable error message
+    </ResponseField>
+    
+    <ResponseField name="retryAfter" type="number">
+      Timestamp (milliseconds) when to retry after rate limit (only for rate limit errors)
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Error Codes
+
+<ResponseField name="ERR_INVALID_URL">
+  No image file provided or invalid file type. Despite the code name, this is used for file validation errors.
+</ResponseField>
+
+<ResponseField name="ERR_NO_RECIPE_FOUND">
+  No recipe found in image - could not read recipe text
+</ResponseField>
+
+<ResponseField name="ERR_AI_PARSE_FAILED">
+  Failed to extract recipe from image or AI service not configured
+</ResponseField>
+
+<ResponseField name="ERR_RATE_LIMIT">
+  Too many requests - rate limit exceeded
+</ResponseField>
+
+<ResponseField name="ERR_UNKNOWN">
+  An unexpected error occurred
+</ResponseField>
+
+## Examples
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://your-domain.com/api/parseRecipeFromImage \
+  -H "Content-Type: multipart/form-data" \
+  -F "image=@recipe-card.jpg"
+```
+
+```javascript JavaScript (with FormData)
+const formData = new FormData();
+const fileInput = document.querySelector('input[type="file"]');
+formData.append('image', fileInput.files[0]);
+
+const response = await fetch('/api/parseRecipeFromImage', {
+  method: 'POST',
+  body: formData
+});
+
+const data = await response.json();
+
+if (data.success) {
+  console.log('Recipe:', data.title);
+  console.log('Ingredients:', data.ingredients);
+  console.log('Instructions:', data.instructions);
+  console.log('Image preview:', data.imageData);
+} else {
+  console.error('Error:', data.error.code, data.error.message);
+}
+```
+
+```python Python
+import requests
+
+with open('recipe-card.jpg', 'rb') as f:
+    files = {'image': f}
+    response = requests.post(
+        'https://your-domain.com/api/parseRecipeFromImage',
+        files=files
+    )
+
+data = response.json()
+
+if data['success']:
+    print(f"Recipe: {data['title']}")
+    print(f"Ingredients: {len(data['ingredients'])} groups")
+    print(f"Instructions: {len(data['instructions'])} steps")
+else:
+    print(f"Error: {data['error']['code']} - {data['error']['message']}")
+```
+
+</CodeGroup>
+
+### Success Response Example
+
+```json
+{
+  "success": true,
+  "title": "Grandma's Chocolate Cake",
+  "ingredients": [
+    {
+      "groupName": "For the cake",
+      "ingredients": [
+        {
+          "amount": "2",
+          "units": "cups",
+          "ingredient": "all-purpose flour"
+        },
+        {
+          "amount": "1 3/4",
+          "units": "cups",
+          "ingredient": "granulated sugar"
+        }
+      ]
+    }
+  ],
+  "instructions": [
+    "Preheat oven to 350°F.",
+    "Mix flour and sugar in a large bowl.",
+    "Bake for 30-35 minutes."
+  ],
+  "summary": "A classic chocolate cake recipe with rich, moist layers.",
+  "author": "Grandma Smith",
+  "servings": "12 servings",
+  "prepTimeMinutes": 20,
+  "cookTimeMinutes": 35,
+  "totalTimeMinutes": 55,
+  "imageData": "data:image/jpeg;base64,/9j/4AAQSkZJRg...",
+  "imageFilename": "recipe-card.jpg"
+}
+```
+
+### Error Response Example
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "ERR_INVALID_URL",
+    "message": "Invalid file type. Please upload a JPG, PNG, WEBP, or GIF image."
+  }
+}
+```
+
+<Warning>
+  This endpoint uses AI vision models and may consume significant API tokens. Rate limits apply.
+</Warning>
+
+<Warning>
+  Images must be clear and readable for best results. Low-resolution or blurry images may result in parsing errors.
+</Warning>

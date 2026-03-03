@@ -1,0 +1,248 @@
+---
+title: 'Parse Ingredients from Text'
+api: 'POST /api/parseIngredients'
+description: 'Extract structured ingredient data from raw HTML or text using AI'
+---
+
+## Overview
+
+The `/api/parseIngredients` endpoint extracts structured ingredient data from raw HTML or text content. It uses AI to parse ingredients into a structured format with amounts, units, ingredient names, descriptions, and substitutions.
+
+This endpoint is useful when you have recipe HTML content but need to extract just the ingredients in a structured format.
+
+## Request
+
+<ParamField body="text" type="string" required>
+  Raw HTML or text content containing ingredient information. Maximum 15,000 characters.
+  
+  This can be the full HTML of a recipe page or just the ingredients section.
+</ParamField>
+
+## Response
+
+### Success Response
+
+<ResponseField name="success" type="boolean" required>
+  Always `true` for successful responses
+</ResponseField>
+
+<ResponseField name="data" type="string" required>
+  JSON string containing the parsed recipe title and ingredients. Parse this string to access the structured data.
+  
+  The parsed structure is an array: `[title, ingredientGroups]`
+  
+  <Expandable title="Parsed Data Structure">
+    ```typescript
+    [
+      "Recipe Title",  // string
+      [                // array of ingredient groups
+        {
+          "groupName": "For the sauce",
+          "ingredients": [
+            {
+              "amount": "2",
+              "units": "tablespoons",
+              "ingredient": "unsalted butter",
+              "description": "Creates silky base and rich mouthfeel",
+              "substitutions": ["ghee", "olive oil"]
+            }
+          ]
+        }
+      ]
+    ]
+    ```
+  </Expandable>
+</ResponseField>
+
+### Error Response
+
+<ResponseField name="success" type="boolean">
+  Always `false` for error responses
+</ResponseField>
+
+<ResponseField name="error" type="object">
+  Error details
+  
+  <Expandable title="Error Object">
+    <ResponseField name="code" type="string">
+      Error code (see Error Codes section)
+    </ResponseField>
+    
+    <ResponseField name="message" type="string">
+      Human-readable error message
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Error Codes
+
+<ResponseField name="ERR_INVALID_URL">
+  Text input is required and must be a string (despite the code name, this is used for input validation)
+</ResponseField>
+
+<ResponseField name="ERR_NO_RECIPE_FOUND">
+  Text input is empty or no valid recipe found in the provided HTML
+</ResponseField>
+
+<ResponseField name="ERR_AI_PARSE_FAILED">
+  AI returned invalid response format or no response from AI service
+</ResponseField>
+
+<ResponseField name="ERR_TIMEOUT">
+  AI service request timed out
+</ResponseField>
+
+<ResponseField name="ERR_UNKNOWN">
+  AI service is not configured or an unexpected error occurred
+</ResponseField>
+
+## Features
+
+This endpoint automatically:
+
+- Extracts recipe title from HTML
+- Parses ingredient amounts exactly as written (preserves fractions like "2 1/2")
+- Identifies ingredient units and names
+- Creates logical ingredient groupings (sauce, main, garnish, etc.)
+- Generates descriptions for each ingredient explaining its culinary purpose
+- Suggests 1-3 realistic substitutions for each ingredient
+
+## Examples
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://your-domain.com/api/parseIngredients \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "<h1>Gochujang Pasta</h1><h2>Ingredients</h2><ul><li>2 tablespoons unsalted butter</li><li>2 cloves garlic, minced</li><li>2 tablespoons gochujang</li><li>1/2 cup heavy cream</li></ul>"
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch('/api/parseIngredients', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    text: '<h1>Gochujang Pasta</h1><ul><li>2 tablespoons butter</li><li>2 cloves garlic</li></ul>'
+  })
+});
+
+const result = await response.json();
+
+if (result.success) {
+  // Parse the data string to get structured data
+  const [title, ingredientGroups] = JSON.parse(result.data);
+  
+  console.log('Title:', title);
+  console.log('Ingredient Groups:', ingredientGroups);
+  
+  ingredientGroups.forEach(group => {
+    console.log(`\n${group.groupName}:`);
+    group.ingredients.forEach(ing => {
+      console.log(`  ${ing.amount} ${ing.units} ${ing.ingredient}`);
+      console.log(`    Purpose: ${ing.description}`);
+      console.log(`    Substitutions: ${ing.substitutions.join(', ')}`);
+    });
+  });
+} else {
+  console.error('Error:', result.error);
+}
+```
+
+```python Python
+import requests
+import json
+
+html_content = '''
+<h1>Gochujang Pasta</h1>
+<h2>Ingredients</h2>
+<ul>
+  <li>2 tablespoons unsalted butter</li>
+  <li>2 cloves garlic, minced</li>
+  <li>2 tablespoons gochujang</li>
+</ul>
+'''
+
+response = requests.post(
+    'https://your-domain.com/api/parseIngredients',
+    json={'text': html_content}
+)
+
+result = response.json()
+
+if result['success']:
+    # Parse the data string
+    title, ingredient_groups = json.loads(result['data'])
+    
+    print(f"Title: {title}")
+    for group in ingredient_groups:
+        print(f"\n{group['groupName']}:")
+        for ing in group['ingredients']:
+            print(f"  {ing['amount']} {ing['units']} {ing['ingredient']}")
+            print(f"    {ing['description']}")
+else:
+    print(f"Error: {result['error']['code']} - {result['error']['message']}")
+```
+
+</CodeGroup>
+
+### Success Response Example
+
+```json
+{
+  "success": true,
+  "data": "[\"Gochujang Pasta\", [{\"groupName\": \"For the sauce\", \"ingredients\": [{\"amount\": \"2\", \"units\": \"tablespoons\", \"ingredient\": \"unsalted butter\", \"description\": \"Creates silky base and rich mouthfeel\", \"substitutions\": [\"ghee\", \"olive oil\"]}, {\"amount\": \"2\", \"units\": \"tablespoons\", \"ingredient\": \"gochujang\", \"description\": \"Adds spicy-sweet depth and fermented complexity\", \"substitutions\": [\"sriracha mixed with miso\", \"sambal oelek\"]}]}]]"
+}
+```
+
+When parsed, the `data` field contains:
+
+```json
+[
+  "Gochujang Pasta",
+  [
+    {
+      "groupName": "For the sauce",
+      "ingredients": [
+        {
+          "amount": "2",
+          "units": "tablespoons",
+          "ingredient": "unsalted butter",
+          "description": "Creates silky base and rich mouthfeel",
+          "substitutions": ["ghee", "olive oil"]
+        },
+        {
+          "amount": "2",
+          "units": "tablespoons",
+          "ingredient": "gochujang",
+          "description": "Adds spicy-sweet depth and fermented complexity",
+          "substitutions": ["sriracha mixed with miso", "sambal oelek"]
+        }
+      ]
+    }
+  ]
+]
+```
+
+### Error Response Example
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "ERR_NO_RECIPE_FOUND",
+    "message": "No valid recipe found in the provided HTML"
+  }
+}
+```
+
+<Warning>
+  The input text is limited to the first 15,000 characters. Longer content will be truncated.
+</Warning>
+
+<Warning>
+  This endpoint uses AI and may consume API tokens. Ensure your AI service (Groq) is properly configured with an API key.
+</Warning>

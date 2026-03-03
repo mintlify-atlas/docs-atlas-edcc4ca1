@@ -1,0 +1,132 @@
+---
+title: 'URL Validator'
+api: 'POST /api/urlValidator'
+description: 'Validates a URL and checks if it contains recipe content'
+---
+
+## Overview
+
+The URL Validator endpoint validates a given URL and determines whether it contains recipe content. It performs URL format validation, fetches the page content, and analyzes it for recipe-specific indicators such as ingredients, instructions, and Recipe schema markup.
+
+## Request
+
+<ParamField body="url" type="string" required>
+  The URL to validate. Must be a valid, well-formed URL string.
+</ParamField>
+
+### Example Request
+
+```bash
+curl -X POST https://yourdomain.com/api/urlValidator \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://example.com/recipe/chocolate-chip-cookies"
+  }'
+```
+
+## Response
+
+### Success Response
+
+<ResponseField name="success" type="boolean">
+  Indicates whether the operation was successful.
+</ResponseField>
+
+<ResponseField name="isRecipe" type="boolean">
+  Indicates whether the URL contains recipe content.
+</ResponseField>
+
+```json
+{
+  "success": true,
+  "isRecipe": true
+}
+```
+
+### Error Response
+
+<ResponseField name="success" type="boolean">
+  Always `false` for error responses.
+</ResponseField>
+
+<ResponseField name="error" type="object">
+  Error details object.
+  
+  <ResponseField name="code" type="string">
+    Error code identifier (e.g., `ERR_INVALID_URL`, `ERR_NO_RECIPE_FOUND`, `ERR_TIMEOUT`).
+  </ResponseField>
+  
+  <ResponseField name="message" type="string">
+    Human-readable error message.
+  </ResponseField>
+</ResponseField>
+
+## Recipe Detection Logic
+
+The endpoint considers a page to contain recipe content if:
+
+1. **Schema-based detection**: The page contains Recipe schema markup (`@type: "Recipe"` in JSON-LD)
+2. **Content-based detection**: The page contains both:
+   - Text mentioning "ingredient" or "ingredients"
+   - Text mentioning "instruction", "step", or "directions"
+
+## Error Handling
+
+The endpoint handles various error scenarios:
+
+| Error Code | Status | Description |
+|------------|--------|-------------|
+| `ERR_INVALID_URL` | 200 | URL parameter is missing, not a string, or invalid format |
+| `ERR_NO_RECIPE_FOUND` | 200 | Page not found (404), empty content, or no recipe detected |
+| `ERR_TIMEOUT` | 200 | Request timed out after 10 seconds |
+| `ERR_FETCH_FAILED` | 200 | Network error or server error (5xx) |
+| `ERR_UNKNOWN` | 200 | Unexpected error occurred |
+
+### Error Response Examples
+
+**Invalid URL format:**
+```json
+{
+  "success": false,
+  "error": {
+    "code": "ERR_INVALID_URL",
+    "message": "Please enter a valid URL"
+  }
+}
+```
+
+**No recipe found:**
+```json
+{
+  "success": false,
+  "error": {
+    "code": "ERR_NO_RECIPE_FOUND",
+    "message": "No recipe found on this page"
+  }
+}
+```
+
+**Timeout:**
+```json
+{
+  "success": false,
+  "error": {
+    "code": "ERR_TIMEOUT",
+    "message": "Request timed out"
+  }
+}
+```
+
+## Configuration
+
+- **Timeout**: 10 seconds
+- **User-Agent**: Simulates Chrome browser
+- **Accepted languages**: English (en-US, en)
+- **Domain restrictions**: None (supports any recipe website)
+
+## Implementation Notes
+
+- The endpoint removes domain restrictions and supports any recipe website
+- Uses cheerio for HTML parsing and content analysis
+- Fetches pages with browser-like headers to avoid bot detection
+- Returns consistent error structure using the `formatError` utility

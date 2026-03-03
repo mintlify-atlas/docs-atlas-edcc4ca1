@@ -1,0 +1,228 @@
+---
+title: Timers
+description: Built-in cooking timers with persistence, notifications, and multi-timer support
+---
+
+Mizen includes built-in timers that automatically detect time-sensitive steps and persist across page refreshes.
+
+## Timer Features
+
+Each timer provides:
+
+- **Countdown display** - Real-time countdown in MM:SS format
+- **Browser notifications** - Desktop alerts when timers complete
+- **Persistence** - Timers continue running across page refreshes
+- **Multi-timer support** - Run multiple timers simultaneously
+- **Step association** - Each timer is linked to a specific recipe step
+
+## Using Timers
+
+<Steps>
+  <Step title="Identify timed steps">
+    Recipe steps with time durations automatically show a timer button (e.g., "5m", "20m").
+  </Step>
+  
+  <Step title="Start a timer">
+    Click the timer button to begin the countdown. The button updates to show elapsed time.
+  </Step>
+  
+  <Step title="Monitor progress">
+    Watch the countdown in the step card. The display updates every second.
+  </Step>
+  
+  <Step title="Handle completion">
+    When time is up:
+    - The timer shows "Done" with a green checkmark
+    - A browser notification appears (if permitted)
+    - The button changes to green with a success state
+  </Step>
+</Steps>
+
+## Timer Variants
+
+Mizen provides three timer layouts for different contexts:
+
+### Compact Variant
+
+Used in list views and step cards:
+- Small button (7px height)
+- Inline display with minimal space
+- Quick start/pause/reset actions
+
+Implemented in `/home/daytona/workspace/source/src/components/recipe/step-timer.tsx:87-131`.
+
+### Spacious Variant
+
+Full-featured timer with labels:
+- Larger text (text-xl)
+- Start/pause/reset buttons
+- Shows timer label and duration
+- Progress indicator background
+
+### Minimal Variant
+
+Centered display for focus mode:
+- Largest text (text-3xl)
+- Center-aligned
+- Emphasizes countdown time
+
+Configured in `/home/daytona/workspace/source/src/components/recipe/step-timer.tsx:134-206`.
+
+## Timer States
+
+### Inactive
+
+Before starting:
+- Shows duration in minutes ("5m")
+- Dashed border outline
+- Click to start
+
+### Active
+
+While running:
+- Live countdown display
+- Purple background (bg-purple-50)
+- Pause button visible
+- Reset button available
+
+### Complete
+
+After finishing:
+- Green checkmark icon
+- "Done" label
+- Green background (bg-green-50)
+- Click to dismiss/reset
+
+## Notifications
+
+<Note>
+Browser notifications require user permission. Mizen requests notification access on first use.
+</Note>
+
+Notifications include:
+- **Title**: "Timer Complete!"
+- **Body**: Timer label and step number ("Simmer sauce - Step 3 timer is done!")
+
+Notification logic in `/home/daytona/workspace/source/src/components/recipe/step-timer.tsx:54-58`.
+
+## Persistence
+
+Timers are stored in browser localStorage:
+
+```typescript
+interface ActiveTimer {
+  stepNumber: number;
+  startTime: number; // Unix timestamp
+  durationMinutes: number;
+  label: string;
+  originalDurationSeconds?: number;
+}
+```
+
+This enables:
+- **Page refresh recovery** - Timers continue running
+- **Tab switching** - Timers run in background
+- **Session persistence** - Timers survive browser restarts
+
+Implemented in `/home/daytona/workspace/source/src/contexts/TimerContext.tsx:11-17`.
+
+## Timer Context API
+
+The TimerContext provides global timer management:
+
+### startTimer
+
+```typescript
+startTimer(
+  stepNumber: number,
+  durationMinutes: number,
+  label: string
+)
+```
+
+Starts a new timer for the specified step. Replaces any existing timer for that step.
+
+### pauseTimer
+
+```typescript
+pauseTimer(stepNumber: number)
+```
+
+Stops and removes the timer for a step.
+
+### resetTimer
+
+```typescript
+resetTimer(stepNumber: number)
+```
+
+Resets the timer to its original duration.
+
+### getTimerForStep
+
+```typescript
+getTimerForStep(stepNumber: number): ActiveTimer | undefined
+```
+
+Retrieves the active timer for a specific step.
+
+Context implementation in `/home/daytona/workspace/source/src/contexts/TimerContext.tsx:19-29`.
+
+## Multiple Timers
+
+Run timers for different steps simultaneously:
+
+- Each step can have at most one active timer
+- Global timer list tracks all active timers
+- Timers update independently
+- Notifications fire individually
+
+<Tip>
+Use multiple timers when recipes have parallel processes, like "simmer sauce for 20 minutes" while "rest dough for 30 minutes".
+</Tip>
+
+## Time Calculation
+
+Timers calculate remaining time on each update:
+
+```typescript
+const elapsedSeconds = Math.floor(
+  (Date.now() - activeTimer.startTime) / 1000
+);
+const remaining = activeTimer.durationMinutes * 60 - elapsedSeconds;
+```
+
+This approach:
+- Handles page refreshes correctly
+- Accounts for system time changes
+- Provides accurate countdown
+
+Calculation in `/home/daytona/workspace/source/src/components/recipe/step-timer.tsx:43-61`.
+
+## Update Interval
+
+Timers update every 1000ms (1 second):
+
+```typescript
+setInterval(() => {
+  // Update countdown
+}, 1000);
+```
+
+The interval clears automatically when:
+- Timer reaches zero
+- Component unmounts
+- Timer is paused
+
+## Auto-Detection
+
+Mizen automatically detects time durations in recipe steps:
+
+- Pattern matching for "X minutes", "X hours"
+- Extracts duration values
+- Creates timer buttons automatically
+- Labels timers based on step content
+
+<Note>
+Timer detection happens during recipe parsing. Steps without explicit time durations won't show timer buttons.
+</Note>

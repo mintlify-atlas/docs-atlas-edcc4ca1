@@ -1,0 +1,263 @@
+---
+title: Code Style Guidelines
+description: Code style guidelines and conventions for Mizen development
+---
+
+## Overview
+
+Mizen follows strict code style guidelines to maintain consistency and quality across the codebase. This document outlines the conventions and tools used in the project.
+
+## TypeScript Conventions
+
+### Type Safety
+
+- **Strict Types**: Always use explicit TypeScript types
+- **No Any**: Avoid using `any` type - define proper interfaces instead
+- **Interface Definitions**: Define interfaces for complex data structures
+
+<CodeGroup>
+```typescript Good Example
+interface Recipe {
+  id: string;
+  title: string;
+  ingredients: Ingredient[];
+  steps: Step[];
+  prepTime?: number;
+  cookTime?: number;
+  totalTime?: number;
+  servings: number;
+}
+
+function processRecipe(recipe: Recipe): void {
+  // Implementation
+}
+```
+
+```typescript Bad Example
+function processRecipe(recipe: any): void {
+  // Avoid this - use proper types!
+}
+```
+</CodeGroup>
+
+### Unused Variables
+
+The project uses ESLint rules for handling unused variables:
+
+- Prefix unused variables with underscore (`_`)
+- Applies to function arguments, variables, and caught errors
+
+```typescript
+// Acceptable for unused parameters
+function handleClick(_event: MouseEvent, data: RecipeData) {
+  console.log(data);
+}
+```
+
+## React Conventions
+
+### Component Structure
+
+- **Functional Components Only**: Use functional components with hooks
+- **No Class Components**: Class components are not used in this project
+- **Hooks**: Leverage React hooks for state management and side effects
+
+```typescript
+import { useState, useEffect } from 'react';
+
+interface RecipeCardProps {
+  recipe: Recipe;
+  onSelect: (id: string) => void;
+}
+
+export function RecipeCard({ recipe, onSelect }: RecipeCardProps) {
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  
+  // Component logic here
+  
+  return (
+    // JSX here
+  );
+}
+```
+
+### Error Handling
+
+- **Error Boundaries**: Use Error Boundaries for async operations and error handling in UI
+- Wrap components that perform async operations or may throw errors
+
+## Next.js Conventions
+
+- **App Router**: Use Next.js App Router for routing and project structure
+- Follow Next.js best practices for file-based routing
+- Organize routes according to the App Router structure
+
+## Styling Guidelines
+
+### CSS Architecture
+
+- **CSS Modules + Tailwind**: Use combination of CSS Modules and Tailwind CSS
+- **Global Styles**: Reference `src/app/globals.css` for design tokens and base styles
+- **Design Tokens**: Place shared tokens and styles in `globals.css`
+
+### Component Styling
+
+<Warning>
+When changing or adding anything under `components/ui/`, always review and update `src/app/globals.css` as needed for:
+- CSS variables
+- Utility classes
+- Base component styles
+</Warning>
+
+### Dropdown & Popover Components
+
+Use `modal={false}` for dropdowns and popovers to prevent:
+- Scroll lock issues
+- Unexpected layout shifts
+
+```typescript
+<Popover modal={false}>
+  {/* Popover content */}
+</Popover>
+```
+
+## Icons
+
+- **Solar Icons Only**: Use Solar Icons exclusively throughout the project
+- **Prefer Filled**: Use filled variants unless specifically requested otherwise
+- **Reference**: [Solar Icons Documentation](https://icons.solar/)
+
+```typescript
+import { Heart, BookmarkSquare } from '@solar-icons/react';
+
+// Use filled variant by default
+<Heart iconStyle="Bold" />
+```
+
+## Code Quality Tools
+
+### ESLint Configuration
+
+The project uses Next.js ESLint configuration with custom rules:
+
+```javascript
+// eslint.config.mjs
+import nextConfig from 'eslint-config-next';
+import coreWebVitals from 'eslint-config-next/core-web-vitals';
+import typescript from 'eslint-config-next/typescript';
+
+const eslintConfig = [
+  ...nextConfig,
+  ...coreWebVitals,
+  ...typescript,
+  {
+    rules: {
+      '@typescript-eslint/no-unused-vars': [
+        'warn',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+        },
+      ],
+    },
+  },
+];
+```
+
+### Prettier Configuration
+
+Code formatting is handled by Prettier with the following settings:
+
+```json
+{
+  "singleQuote": true
+}
+```
+
+**Key Rules**:
+- Use single quotes for strings
+- Default Prettier settings for other formatting rules
+
+### Running Linters
+
+```bash
+# Check for linting issues
+npm run lint
+
+# Automatically fix issues
+npm run lint:fix
+```
+
+## Code Comments
+
+### When to Comment
+
+- Add clear comments that explain **what** and **why**
+- Focus on the reasoning behind implementation choices
+- Document non-obvious logic or workarounds
+
+```typescript
+// Use modal={false} to prevent scroll lock and layout shift
+// when the popover is opened on mobile devices
+<Popover modal={false}>
+  {/* Content */}
+</Popover>
+```
+
+### What Not to Comment
+
+- Avoid comments that simply restate what the code does
+- Don't comment obvious code
+- Let the code be self-documenting where possible
+
+## Git Workflow
+
+### Pre-commit Hooks
+
+The project uses Husky for Git hooks:
+- Automatic linting before commits
+- Ensures code quality standards are met
+
+### Commit Guidelines
+
+- Write descriptive commit messages
+- Explain both what changed and why
+- Reference issue numbers when applicable
+
+## Risk Management
+
+<Note>
+**For Large or Risky Changes**:
+
+1. Signal with clear indicators:
+   - ⚠️ LARGE CHANGE
+   - 🛑 HIGH RISK
+2. Explain the impact and reasoning
+3. Wait for confirmation before applying changes
+4. Use smaller, incremental changes when possible
+</Note>
+
+## Testing
+
+After making changes:
+
+1. Test locally using `npm run dev`
+2. Run production build: `npm run build`
+3. Verify no linting errors: `npm run lint`
+4. Test affected features thoroughly
+5. Check responsive design on different screen sizes
+
+## Summary Checklist
+
+Before submitting code, ensure:
+
+- ✅ TypeScript strict types used (no `any`)
+- ✅ Functional React components with hooks
+- ✅ Error boundaries for async operations
+- ✅ Solar Icons used exclusively
+- ✅ CSS Modules + Tailwind for styling
+- ✅ Clear comments explaining "what" and "why"
+- ✅ Linting passes (`npm run lint`)
+- ✅ Documentation updated if needed
+- ✅ Changes tested in development environment

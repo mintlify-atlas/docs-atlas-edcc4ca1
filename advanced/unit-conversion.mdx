@@ -1,0 +1,139 @@
+---
+title: "Unit System Conversion"
+description: "Convert recipe measurements between metric and imperial units"
+---
+
+Mizen automatically converts ingredient measurements between metric and imperial unit systems, making recipes accessible to cooks worldwide.
+
+## How It Works
+
+The unit converter analyzes each ingredient's units and converts them to your preferred system:
+
+- **Original** - Keep measurements as written in the recipe
+- **Metric** - Convert to grams, kilograms, milliliters, and liters
+- **Imperial** - Convert to cups, tablespoons, teaspoons, ounces, and pounds
+
+### Conversion Logic
+
+Mizen uses precise conversion ratios for accurate measurements:
+
+**Volume Conversions** (base unit: milliliters)
+- 1 cup = 240 mL
+- 1 tablespoon (Tbsp) = 15 mL
+- 1 teaspoon (tsp) = 5 mL
+- 1 fluid ounce = 30 mL
+- 1 liter = 1000 mL
+
+**Weight Conversions** (base unit: grams)
+- 1 pound (lb) = 454 g
+- 1 ounce (oz) = 28 g
+- 1 kilogram (kg) = 1000 g
+
+<Note>
+  Mizen intelligently handles the ambiguous "oz" unit by analyzing the ingredient name. Liquid ingredients (water, milk, oil) use fluid ounces, while solid ingredients use weight ounces.
+</Note>
+
+## Conversion Examples
+
+### Metric to Imperial
+
+**Original:** 250 mL water  
+**Imperial:** 1 cup water
+
+**Original:** 500 g flour  
+**Imperial:** 1 lb flour
+
+**Original:** 15 mL vanilla extract  
+**Imperial:** 1 Tbsp vanilla extract
+
+### Imperial to Metric
+
+**Original:** 2 cups sugar  
+**Imperial:** 480 mL sugar
+
+**Original:** 1½ lb chicken  
+**Metric:** 681 g chicken
+
+**Original:** ¾ cup butter  
+**Metric:** 180 mL butter
+
+### Range Conversions
+
+Mizen preserves ranges and converts both values:
+
+**Original:** 2-3 cups broth  
+**Metric:** 480-720 mL broth
+
+**Original:** 1 to 2 tsp salt  
+**Metric:** 5 to 10 mL salt
+
+## Smart Unit Selection
+
+The converter automatically chooses appropriate units based on quantity:
+
+### Metric System
+- Small volumes (< 1000 mL) → milliliters
+- Large volumes (≥ 1000 mL) → liters
+- Small weights (< 1000 g) → grams
+- Large weights (≥ 1000 g) → kilograms
+
+### Imperial System
+- Very small volumes (< 15 mL) → teaspoons
+- Small volumes (15-240 mL) → tablespoons
+- Medium volumes (≥ 240 mL) → cups
+- Small weights (< 454 g) → ounces
+- Large weights (≥ 454 g) → pounds
+
+## Non-Convertible Units
+
+Some measurements can't be converted because they're qualitative or countable:
+
+- **Countable items:** 2 cloves garlic, 1 onion, 3 eggs
+- **Qualitative measures:** pinch of salt, handful of herbs, to taste
+- **Package sizes:** 1 can tomatoes, 1 box pasta
+- **Descriptive sizes:** 1 large carrot, 2 medium potatoes
+
+These ingredients remain unchanged regardless of the unit system selected.
+
+## Fraction Formatting
+
+Converted amounts are displayed using Unicode fraction symbols for readability:
+
+- ½ (0.5)
+- ⅓ (0.333)
+- ¼ (0.25)
+- ¾ (0.75)
+- ⅛ (0.125)
+- ⅔ (0.667)
+
+**Example:** 0.75 cups converts to ¾ cup, not "0.75 cup"
+
+<Note>
+  Unit conversion works seamlessly with recipe scaling. When you adjust servings, Mizen first scales the ingredients, then converts them to your preferred unit system.
+</Note>
+
+## Limitations
+
+### Volume vs. Weight
+
+Mizen converts units but doesn't convert between volume and weight. For example:
+
+- 1 cup flour ≠ a specific number of grams (density varies)
+- The converter maintains the measurement type (volume or weight)
+
+### Precision
+
+Conversions are rounded to practical cooking measurements:
+
+- Very small amounts (< 0.125) display as "< ⅛"
+- Decimal values round to the nearest common fraction
+- Amounts within 2% of whole numbers round to whole numbers
+
+### Context-Dependent "Oz"
+
+The "oz" abbreviation can mean fluid ounces (volume) or ounces (weight). Mizen analyzes the ingredient name to determine which:
+
+- **Liquids:** water, milk, oil, juice → fluid ounces (30 mL)
+- **Solids:** flour, sugar, cheese → weight ounces (28 g)
+
+For ambiguous cases, review the conversion to ensure accuracy.

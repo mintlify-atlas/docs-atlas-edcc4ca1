@@ -1,0 +1,211 @@
+---
+title: 'Parse Instructions from Text'
+api: 'POST /api/parseInstructions'
+description: 'Extract structured cooking instructions from raw HTML or text using AI'
+---
+
+## Overview
+
+The `/api/parseInstructions` endpoint extracts structured cooking instruction steps from raw HTML or text content. It uses AI to parse instructions while preserving all important details like temperatures, times, and techniques.
+
+This endpoint is useful when you have recipe HTML content but need to extract just the cooking instructions in a clean, structured format.
+
+## Request
+
+<ParamField body="text" type="string" required>
+  Raw HTML or text content containing cooking instructions. Maximum 15,000 characters.
+  
+  This can be the full HTML of a recipe page or just the instructions section.
+</ParamField>
+
+## Response
+
+### Success Response
+
+<ResponseField name="success" type="boolean" required>
+  Always `true` for successful responses
+</ResponseField>
+
+<ResponseField name="data" type="string" required>
+  JSON string containing an array of instruction steps. Parse this string to access the array of instruction strings.
+  
+  <Expandable title="Parsed Data Structure">
+    ```typescript
+    [
+      "Preheat oven to 350°F (175°C). Grease and flour two 9-inch round cake pans.",
+      "In a medium bowl, whisk together flour, baking powder, and salt.",
+      "Beat eggs one at a time, mixing well after each addition."
+    ]
+    ```
+  </Expandable>
+</ResponseField>
+
+### Error Response
+
+<ResponseField name="success" type="boolean">
+  Always `false` for error responses
+</ResponseField>
+
+<ResponseField name="error" type="object">
+  Error details
+  
+  <Expandable title="Error Object">
+    <ResponseField name="code" type="string">
+      Error code (see Error Codes section)
+    </ResponseField>
+    
+    <ResponseField name="message" type="string">
+      Human-readable error message
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Error Codes
+
+<ResponseField name="ERR_INVALID_URL">
+  Text input is required and must be a string (despite the code name, this is used for input validation)
+</ResponseField>
+
+<ResponseField name="ERR_NO_RECIPE_FOUND">
+  Text input is empty
+</ResponseField>
+
+<ResponseField name="ERR_AI_PARSE_FAILED">
+  AI returned invalid response format or no response from AI service
+</ResponseField>
+
+<ResponseField name="ERR_TIMEOUT">
+  AI service request timed out
+</ResponseField>
+
+<ResponseField name="ERR_UNKNOWN">
+  AI service is not configured, authentication failed, or quota exceeded
+</ResponseField>
+
+## Features
+
+This endpoint automatically:
+
+- Extracts all instruction steps in order
+- Preserves cooking temperatures exactly ("350°F", "medium-high heat")
+- Preserves cooking times ("30 minutes", "until golden brown")
+- Keeps all measurements and technique descriptions
+- Removes author names and attribution text
+- Filters out non-instruction content
+- Maintains original level of detail
+
+## Examples
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://your-domain.com/api/parseInstructions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "<h2>Instructions</h2><ol><li>Preheat oven to 350°F.</li><li>Mix flour and sugar.</li><li>Bake for 30 minutes.</li></ol>"
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch('/api/parseInstructions', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    text: '<h2>Instructions</h2><ol><li>Preheat oven to 350°F.</li><li>Mix ingredients.</li></ol>'
+  })
+});
+
+const result = await response.json();
+
+if (result.success) {
+  // Parse the data string to get the array of instructions
+  const instructions = JSON.parse(result.data);
+  
+  console.log('Instructions:');
+  instructions.forEach((step, index) => {
+    console.log(`${index + 1}. ${step}`);
+  });
+} else {
+  console.error('Error:', result.error);
+}
+```
+
+```python Python
+import requests
+import json
+
+html_content = '''
+<h2>Instructions</h2>
+<ol>
+  <li>Preheat oven to 350°F (175°C).</li>
+  <li>In a large bowl, mix flour and sugar.</li>
+  <li>Bake for 30-35 minutes until golden brown.</li>
+</ol>
+'''
+
+response = requests.post(
+    'https://your-domain.com/api/parseInstructions',
+    json={'text': html_content}
+)
+
+result = response.json()
+
+if result['success']:
+    # Parse the data string
+    instructions = json.loads(result['data'])
+    
+    print("Instructions:")
+    for i, step in enumerate(instructions, 1):
+        print(f"{i}. {step}")
+else:
+    print(f"Error: {result['error']['code']} - {result['error']['message']}")
+```
+
+</CodeGroup>
+
+### Success Response Example
+
+```json
+{
+  "success": true,
+  "data": "[\"Preheat oven to 350°F (175°C). Grease and flour two 9-inch round cake pans.\",\"In a medium bowl, whisk together 2 1/2 cups all-purpose flour, 1 teaspoon baking powder, 1/2 teaspoon baking soda, and 1/4 teaspoon salt. Set aside.\",\"In a large bowl, using an electric mixer on medium speed, cream together 3/4 cup unsalted butter and 1 3/4 cups granulated sugar until light and fluffy, about 3-4 minutes.\",\"Beat in 3 large eggs, one at a time, mixing well after each addition. Stir in 1 1/2 teaspoons vanilla extract.\",\"Bake for 28-32 minutes, or until a toothpick inserted in the center comes out clean.\"]"
+}
+```
+
+When parsed, the `data` field contains:
+
+```json
+[
+  "Preheat oven to 350°F (175°C). Grease and flour two 9-inch round cake pans.",
+  "In a medium bowl, whisk together 2 1/2 cups all-purpose flour, 1 teaspoon baking powder, 1/2 teaspoon baking soda, and 1/4 teaspoon salt. Set aside.",
+  "In a large bowl, using an electric mixer on medium speed, cream together 3/4 cup unsalted butter and 1 3/4 cups granulated sugar until light and fluffy, about 3-4 minutes.",
+  "Beat in 3 large eggs, one at a time, mixing well after each addition. Stir in 1 1/2 teaspoons vanilla extract.",
+  "Bake for 28-32 minutes, or until a toothpick inserted in the center comes out clean."
+]
+```
+
+### Error Response Example
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "ERR_NO_RECIPE_FOUND",
+    "message": "Text input is empty"
+  }
+}
+```
+
+<Warning>
+  The input text is limited to the first 15,000 characters. Longer content will be truncated.
+</Warning>
+
+<Warning>
+  This endpoint uses AI and may consume API tokens. Ensure your AI service (Groq) is properly configured with an API key.
+</Warning>
+
+<Warning>
+  The AI preserves all details from the HTML. Do not rely on the AI to simplify or shorten instructions - it extracts them exactly as written.
+</Warning>

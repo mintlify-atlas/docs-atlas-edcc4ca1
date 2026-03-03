@@ -1,0 +1,242 @@
+---
+title: Managing Recipes
+description: Bookmarking, searching, and organizing your recipe collection
+---
+
+Mizen provides powerful tools to organize, find, and manage your recipe collection. Whether you have a few favorites or hundreds of recipes, Mizen helps you stay organized.
+
+## Recipe Storage
+
+Mizen stores recipes locally in your browser using localStorage. This means:
+- Recipes are private and stored on your device
+- No account required for basic functionality
+- Recipes persist between sessions
+- Works offline once a recipe is parsed
+
+## Recent Recipes
+
+Recently parsed recipes appear on the homepage below the search bar.
+
+### What You See
+
+Each recipe in the Recent Recipes list shows:
+- Recipe title
+- Total time (prep + cook time) as a pill badge
+- Three-dot menu for quick actions
+
+### Quick Actions Menu
+
+Click the three-dot menu (⋯) on any recipe to:
+- **Open in new tab**: View the original source recipe in a new browser tab
+- **Add to Cookbook**: Bookmark the recipe for easy access
+- **Copy link**: Copy the source URL to clipboard
+- **Rename**: Change the recipe title
+- **Delete**: Remove the recipe from your collection (with undo option)
+
+### See More
+
+The homepage shows 5 recent recipes by default. Click "See more" to expand the full list.
+
+## Cookbook (Bookmarked Recipes)
+
+Bookmark your favorite recipes to keep them organized and accessible.
+
+### Adding to Cookbook
+
+<Steps>
+
+### From the homepage
+
+Click the three-dot menu on any recent recipe and select "Add to Cookbook".
+
+### From a recipe page
+
+Click the bookmark icon in the top-right corner of the recipe page. The icon fills when a recipe is bookmarked.
+
+### Confirmation
+
+Bookmarked recipes appear in:
+- The Cookbook page (`/cookbook`)
+- The sidebar's "Pinned" section
+- The navbar with a filled bookmark icon
+
+</Steps>
+
+### Removing from Cookbook
+
+To remove a bookmark:
+1. Click the filled bookmark icon on the recipe page, or
+2. Select "Remove from Cookbook" from the three-dot menu
+3. Confirm the removal when prompted
+
+Recipes remain in your Recent Recipes even after unbookmarking.
+
+## Sidebar Navigation
+
+The sidebar (visible on desktop, hamburger menu on mobile) provides quick access to your recipe collection.
+
+### Sidebar Sections
+
+**Pinned**
+
+Bookmarked recipes appear in the Pinned section at the top of the sidebar. This section only shows recipes you've explicitly bookmarked.
+
+**Recipes**
+
+All your recent recipes (bookmarked and unbookmarked) appear in the Recipes section. The active recipe is highlighted with a gray background.
+
+### Sidebar Features
+
+**Recipe Icons**
+
+Each recipe displays a cuisine-specific icon (e.g., a tomato for Italian, a bowl for Asian). If no cuisine is detected, a generic icon appears.
+
+**Reordering Recipes**
+
+Click and drag the grip handle (⋮⋮) next to any recipe to reorder your list. Your custom order persists across sessions.
+
+**Hover Cards (Desktop)**
+
+Hover over any recipe in the sidebar to see a preview card with:
+- Recipe title
+- Prep and cook times
+- Cuisine tags
+- Quick actions (open, rename, delete)
+
+**Right-Click Menu**
+
+Right-click (or long-press on mobile) any sidebar recipe to access the context menu with quick actions.
+
+## Searching Recipes
+
+Mizen offers multiple ways to search and find recipes.
+
+### Homepage Search
+
+Type in the search bar on the homepage to search through:
+- Recipe titles
+- Recipe descriptions
+- Recently parsed recipes
+
+Results appear in a dropdown as you type, showing up to 5 matching recipes.
+
+### Command Palette (⌘K)
+
+Press `⌘K` (Mac) or `Ctrl+K` (Windows/Linux) anywhere in the app to open the command palette. Use it to:
+- Search all recipes by title
+- Quickly navigate to any recipe
+- Access common actions
+
+Type to filter results, then press Enter or click to select.
+
+### Navbar Search
+
+The navbar at the top includes an inline search field for quick access on any page.
+
+## Recipe Organization Tips
+
+### Renaming Recipes
+
+<Steps>
+
+### Open the rename dialog
+
+Click the three-dot menu on a recipe and select "Rename", or access it from the recipe page settings menu.
+
+### Enter a new title
+
+Type your desired recipe title. This doesn't change the original source recipe, only how it appears in Mizen.
+
+### Save changes
+
+Press Enter or click "Save". The new title appears everywhere the recipe is shown.
+
+</Steps>
+
+### Deleting Recipes
+
+When you delete a recipe:
+1. A confirmation dialog appears to prevent accidental deletion
+2. The recipe is removed from Recent Recipes and Cookbook
+3. A toast notification with an "Undo" button appears for 5 seconds
+4. Click "Undo" to restore the recipe with all its data (progress, bookmarks, etc.)
+
+## Cookbook Page
+
+Navigate to the Cookbook page by:
+- Clicking "Cookbook" in the navbar
+- Clicking "Cookbook" in the sidebar (when available)
+
+The Cookbook page displays all bookmarked recipes in a grid layout with:
+- Recipe title and cuisine tags
+- Recipe summary
+- Cooking time estimates
+- Search and filter options
+
+## Data Persistence
+
+Mizen saves several types of data locally:
+
+### Recipe Data
+- Full recipe content (ingredients, instructions, metadata)
+- Source URL and author information
+- AI-generated summaries and guidance
+- Custom titles (if renamed)
+
+### Progress Data
+- Checked ingredients (persisted per recipe)
+- Collapsed/expanded ingredient groups
+- Servings adjustments
+- Unit system preferences (metric/imperial)
+
+### Preferences
+- Recipe order in sidebar
+- Bookmark status
+- Pin status
+- Sidebar width (desktop)
+
+### Photos
+- Dish photos captured in the Plate tab
+- Image data for recipes parsed from images
+
+## Exporting Recipes
+
+You can export individual recipes as plain text:
+
+<Steps>
+
+### Open recipe settings
+
+Click the settings icon (gear) on any recipe page.
+
+### Copy as plain text
+
+Select "Copy recipe" from the menu.
+
+### Paste anywhere
+
+The recipe is copied to your clipboard as formatted text including:
+- Title and author
+- Ingredients (with current serving size)
+- Step-by-step instructions
+- Cooking times
+
+</Steps>
+
+## Tips for Organization
+
+<Tip>
+**Use Descriptive Titles**: Rename recipes with descriptive titles that help you remember what they are (e.g., "Mom's Chocolate Chip Cookies" instead of just "Cookies").
+</Tip>
+
+<Tip>
+**Bookmark Sparingly**: Only bookmark recipes you plan to make again. This keeps your Cookbook focused on true favorites.
+</Tip>
+
+<Tip>
+**Regular Cleanup**: Periodically review your Recent Recipes and delete ones you won't make again to keep your collection manageable.
+</Tip>
+
+<Tip>
+**Search by Ingredients**: When searching, include ingredient names to find recipes that use specific items you have on hand.
+</Tip>

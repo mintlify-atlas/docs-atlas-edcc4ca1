@@ -1,0 +1,368 @@
+---
+title: Authentication & Security
+description: API authentication, environment variables, and security best practices for the Mizen API
+---
+
+# Authentication & Security
+
+The Mizen API uses environment variables for authentication with third-party services. Currently, the API does not require authentication from clients, but it relies on server-side API keys for AI services and integrations.
+
+## Environment Variables
+
+Mizen requires the following environment variables to be configured:
+
+### Required Variables
+
+#### GROQ_API_KEY
+
+**Purpose**: Authentication for AI recipe parsing and enhancement features
+
+**Where it's used**:
+- `/api/parseIngredients` - AI-based ingredient extraction
+- `/api/parseInstructions` - AI-based instruction parsing
+- `/api/parseRecipe` - Unified recipe parsing (AI fallback)
+- `/api/parseRecipeFromImage` - Image-based recipe extraction
+- `/api/generateSubstitutions` - AI-powered ingredient substitutions
+- `/api/generatePlatingGuidance` - AI plating recommendations
+
+**Setup**:
+
+1. Create an account at [Groq Cloud](https://console.groq.com)
+2. Generate an API key from the console
+3. Add to your `.env.local` file:
+
+```bash
+GROQ_API_KEY=gsk_your_api_key_here
+```
+
+**Error handling**: If this key is not configured, AI-powered endpoints will return:
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "ERR_UNKNOWN",
+    "message": "AI service is not configured"
+  }
+}
+```
+
+### Optional Variables
+
+#### NOTION_API_KEY
+
+**Purpose**: Integration with Notion for feedback submission
+
+**Where it's used**:
+- `/api/feedback` - Submit user feedback to Notion database
+- `/api/feedback/upload` - Upload feedback screenshots
+
+**Setup**:
+
+1. Create a Notion integration at [Notion Integrations](https://www.notion.so/my-integrations)
+2. Copy the Internal Integration Token
+3. Add to your `.env.local` file:
+
+```bash
+NOTION_API_KEY=secret_your_integration_token
+```
+
+**Error handling**: If not configured, feedback endpoints return:
+
+```json
+{
+  "success": false,
+  "error": "Feedback is temporarily unavailable",
+  "code": "FEEDBACK_NOT_CONFIGURED"
+}
+```
+
+#### NOTION_FEEDBACK_DATABASE_ID
+
+**Purpose**: Target Notion database for storing feedback
+
+**Where it's used**:
+- `/api/feedback` - Specifies which Notion database to write to
+
+**Setup**:
+
+1. Create a Notion database with the required properties:
+   - Title (title)
+   - Type (select)
+   - Status (status)
+   - Priority (select)
+   - Source (select)
+   - Reporter (rich_text)
+   - Device/OS (rich_text)
+   - App Version (rich_text)
+
+2. Share the database with your integration
+3. Copy the database ID from the URL: `https://notion.so/workspace/<database_id>?v=...`
+4. Add to your `.env.local` file:
+
+```bash
+NOTION_FEEDBACK_DATABASE_ID=your_database_id_here
+```
+
+## Security Best Practices
+
+### API Key Protection
+
+**Never expose API keys in client-side code**. All API keys should be stored in environment variables and only accessed server-side.
+
+✅ **Good** - Server-side usage:
+```typescript
+// /api/parseRecipe/route.ts
+const groq = new Groq({
+  apiKey: process.env.GROQ_API_KEY, // Server-side only
+});
+```
+
+❌ **Bad** - Client-side exposure:
+```typescript
+// components/RecipeParser.tsx
+const groq = new Groq({
+  apiKey: 'gsk_...' // Never hardcode or expose to client!
+});
+```
+
+### Environment File Security
+
+1. **Never commit** `.env.local` or `.env` files to version control
+2. Add to `.gitignore`:
+
+```bash
+# Environment variables
+.env
+.env.local
+.env.*.local
+```
+
+3. Use `.env.example` for documentation:
+
+```bash
+# .env.example
+GROQ_API_KEY=your_groq_api_key_here
+NOTION_API_KEY=your_notion_integration_token
+NOTION_FEEDBACK_DATABASE_ID=your_database_id
+```
+
+### Request Validation
+
+All API endpoints validate incoming requests:
+
+#### URL Validation
+
+Endpoints accepting URLs perform validation:
+
+```typescript
+// Validate URL format
+try {
+  new URL(url);
+} catch {
+  return formatError(
+    ERROR_CODES.ERR_INVALID_URL,
+    'Invalid URL format'
+  );
+}
+```
+
+#### File Upload Validation
+
+Image upload endpoints enforce security constraints:
+
+**Allowed file types**:
+- `image/jpeg`
+- `image/jpg`
+- `image/png`
+- `image/webp`
+- `image/gif`
+
+**Maximum file size**: 10MB
+
+**Validation example**:
+```typescript
+// Check file type
+const allowedTypes = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif'
+];
+
+if (!allowedTypes.includes(file.type)) {
+  return formatError(
+    ERROR_CODES.ERR_INVALID_FILE_TYPE,
+    'Invalid file type'
+  );
+}
+
+// Check file size
+if (file.size > 10 * 1024 * 1024) {
+  return formatError(
+    ERROR_CODES.ERR_FILE_TOO_LARGE,
+    'Image size must be less than 10MB'
+  );
+}
+```
+
+### Input Sanitization
+
+The API sanitizes all user inputs:
+
+1. **Type validation**: Ensures inputs match expected types
+2. **Length limits**: Prevents oversized payloads
+3. **Content cleaning**: Removes potentially harmful content
+
+```typescript
+// Example: Input validation
+if (!url || typeof url !== 'string') {
+  return formatError(
+    ERROR_CODES.ERR_INVALID_URL,
+    'URL is required and must be a string'
+  );
+}
+
+if (url.trim().length === 0) {
+  return formatError(
+    ERROR_CODES.ERR_INVALID_URL,
+    'URL cannot be empty'
+  );
+}
+```
+
+### Rate Limiting
+
+To prevent abuse, the API implements rate limiting through the AI service provider (Groq). When limits are exceeded:
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "ERR_RATE_LIMIT",
+    "message": "Too many requests",
+    "retryAfter": 1234567890
+  }
+}
+```
+
+The `retryAfter` timestamp (Unix milliseconds) indicates when to retry.
+
+**Implementing client-side rate limit handling**:
+
+```typescript
+const response = await fetch('/api/parseRecipe', {
+  method: 'POST',
+  body: JSON.stringify({ url }),
+});
+
+const data = await response.json();
+
+if (!data.success && data.error.code === 'ERR_RATE_LIMIT') {
+  const waitUntil = new Date(data.error.retryAfter);
+  console.log(`Rate limited. Retry after: ${waitUntil.toISOString()}`);
+  
+  // Wait and retry
+  const waitMs = data.error.retryAfter - Date.now();
+  setTimeout(() => {
+    // Retry request
+  }, waitMs);
+}
+```
+
+## CORS Configuration
+
+Mizen API endpoints are designed for same-origin requests. If you need to enable CORS for external access, configure Next.js middleware:
+
+```typescript
+// middleware.ts
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+
+export function middleware(request: NextRequest) {
+  const response = NextResponse.next();
+  
+  // Set CORS headers
+  response.headers.set('Access-Control-Allow-Origin', '*');
+  response.headers.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  response.headers.set('Access-Control-Allow-Headers', 'Content-Type');
+  
+  return response;
+}
+
+export const config = {
+  matcher: '/api/:path*',
+};
+```
+
+## Production Deployment
+
+### Vercel Environment Variables
+
+When deploying to Vercel:
+
+1. Go to your project settings
+2. Navigate to "Environment Variables"
+3. Add each required variable:
+   - `GROQ_API_KEY`
+   - `NOTION_API_KEY` (optional)
+   - `NOTION_FEEDBACK_DATABASE_ID` (optional)
+4. Select environments: Production, Preview, Development
+5. Click "Save"
+
+### Other Platforms
+
+For other hosting platforms, consult their documentation for setting environment variables:
+
+- **AWS Amplify**: Environment variables in App settings
+- **Netlify**: Site settings → Environment variables
+- **Railway**: Project settings → Variables
+- **Render**: Environment → Environment Variables
+
+## Testing Authentication
+
+Verify your API keys are configured correctly:
+
+```bash
+# Test recipe parsing (requires GROQ_API_KEY)
+curl -X POST http://localhost:3000/api/parseRecipe \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://www.allrecipes.com/recipe/12345/"}'
+
+# Test feedback submission (requires NOTION_API_KEY)
+curl -X POST http://localhost:3000/api/feedback \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "Bug",
+    "title": "Test feedback",
+    "message": "Testing API configuration"
+  }'
+```
+
+Successful responses indicate proper authentication configuration.
+
+## Error Logging
+
+The API logs authentication errors to the console:
+
+```typescript
+if (!process.env.GROQ_API_KEY) {
+  console.error('GROQ_API_KEY is not configured');
+  return NextResponse.json(
+    formatError(
+      ERROR_CODES.ERR_UNKNOWN,
+      'AI service is not configured'
+    )
+  );
+}
+```
+
+Monitor your server logs for configuration issues during development and production.
+
+## Next Steps
+
+- [API Overview](/api/overview) - Learn about response formats and error codes
+- [Parse Recipe](/api/parse-recipe) - Start parsing recipes from URLs
+- [Parse Recipe from Image](/api/parse-recipe-from-image) - Extract recipes from images
+- [Generate Substitutions](/api/generate-substitutions) - Get ingredient alternatives
+- [Generate Plating Guidance](/api/generate-plating-guidance) - Get plating and storage advice

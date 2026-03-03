@@ -1,0 +1,160 @@
+---
+title: 'Fetch HTML'
+api: 'GET /api/fetchHtml'
+description: 'Fetches and cleans HTML content from a URL'
+---
+
+## Overview
+
+The Fetch HTML endpoint retrieves HTML content from a given URL and returns a cleaned version with unnecessary elements removed. This endpoint strips out scripts, styles, navigation, ads, and other non-content elements, leaving only the main body content.
+
+## Request
+
+<ParamField query="url" type="string" required>
+  The URL to fetch HTML content from. Must be a valid, well-formed URL.
+</ParamField>
+
+### Example Request
+
+```bash
+curl -X GET "https://yourdomain.com/api/fetchHtml?url=https://example.com/recipe/chocolate-chip-cookies"
+```
+
+```bash
+curl -X GET "https://yourdomain.com/api/fetchHtml?url=https%3A%2F%2Fexample.com%2Frecipe%2Fchocolate-chip-cookies"
+```
+
+## Response
+
+### Success Response
+
+<ResponseField name="success" type="boolean">
+  Indicates whether the operation was successful.
+</ResponseField>
+
+<ResponseField name="html" type="string">
+  The cleaned HTML content from the page body, with scripts, styles, and other non-content elements removed.
+</ResponseField>
+
+```json
+{
+  "success": true,
+  "html": "<div class=\"recipe\">...</div>"
+}
+```
+
+### Error Response
+
+<ResponseField name="success" type="boolean">
+  Always `false` for error responses.
+</ResponseField>
+
+<ResponseField name="error" type="object">
+  Error details object.
+  
+  <ResponseField name="code" type="string">
+    Error code identifier (e.g., `ERR_INVALID_URL`, `ERR_TIMEOUT`, `ERR_FETCH_FAILED`).
+  </ResponseField>
+  
+  <ResponseField name="message" type="string">
+    Human-readable error message.
+  </ResponseField>
+</ResponseField>
+
+## HTML Cleaning Process
+
+The endpoint performs aggressive cleaning to remove:
+
+### Removed Elements
+
+- **Scripts and styles**: `<script>`, `<style>`, `<noscript>`, `<link>`, `<meta>`
+- **Media elements**: `<svg>`, `<symbol>`, `<img>`, `<iframe>`, `<video>`, `<audio>`, `<canvas>`
+- **Interactive elements**: `<button>`, `<form>`, `<input>`, `<select>`, `<option>`
+- **Navigation**: `.navbar`, `.header`, `.footer`, `.sidebar`, `.breadcrumb`, `.nav`
+- **Advertisements**: `.ad`, `.ads`, `.sponsor`, `.promo`, `.adsbygoogle`, `.outbrain`, `.taboola`
+- **Social and sharing**: `.social`, `.share`, `.yummly-share`
+- **Ratings and comments**: `.rating`, `.comments`, `.comment`, `.rmp-rating-widget`
+- **App banners**: `.mobile-banner`, `.app-banner`, `.push-modal`
+- **WordPress blocks**: `.wp-block-*`, `.widget`
+- **Utilities**: `.print-btn`, `.scroll-to-top`, `.search-box`, `.tooltips`
+
+The endpoint preserves only the visible body content after removing these elements.
+
+## Error Handling
+
+| Error Code | Status | Description |
+|------------|--------|-------------|
+| `ERR_INVALID_URL` | 200 | URL parameter is missing or invalid format |
+| `ERR_NO_RECIPE_FOUND` | 200 | Page not found (404), empty content, or no content after cleaning |
+| `ERR_FETCH_FAILED` | 200 | Network error or server error (5xx) |
+| `ERR_TIMEOUT` | 200 | Request timed out after 10 seconds |
+| `ERR_UNKNOWN` | 200 | Unexpected error occurred |
+
+### Error Response Examples
+
+**No URL provided:**
+```json
+{
+  "success": false,
+  "error": {
+    "code": "ERR_INVALID_URL",
+    "message": "No URL provided"
+  }
+}
+```
+
+**Invalid URL format:**
+```json
+{
+  "success": false,
+  "error": {
+    "code": "ERR_INVALID_URL",
+    "message": "Invalid URL format"
+  }
+}
+```
+
+**Request timeout:**
+```json
+{
+  "success": false,
+  "error": {
+    "code": "ERR_TIMEOUT",
+    "message": "Request timed out"
+  }
+}
+```
+
+**Network error:**
+```json
+{
+  "success": false,
+  "error": {
+    "code": "ERR_FETCH_FAILED",
+    "message": "Network error occurred"
+  }
+}
+```
+
+## Configuration
+
+- **Timeout**: 10 seconds (using AbortController)
+- **User-Agent**: Simulates Chrome browser to avoid bot detection
+- **Accepted content**: HTML, XHTML, XML
+- **Accepted languages**: English (en-US, en)
+
+## Implementation Notes
+
+- Uses native `fetch` API with `AbortController` for timeout handling
+- Uses cheerio for HTML parsing and manipulation
+- Returns cleaned HTML as a string (not parsed DOM)
+- Fetches pages with browser-like headers to avoid bot detection
+- Matches timeout duration with `/api/urlValidator` (10 seconds)
+- Returns consistent error structure using the `formatError` utility
+
+## Use Cases
+
+- Pre-processing HTML before sending to scraping services
+- Reducing payload size by removing unnecessary elements
+- Extracting main content from recipe pages
+- Preparing HTML for AI/ML parsing or analysis

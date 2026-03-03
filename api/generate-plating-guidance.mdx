@@ -1,0 +1,263 @@
+---
+title: 'Generate Plating Guidance'
+api: 'POST /api/generatePlatingGuidance'
+description: 'Generate professional plating guidance, storage instructions, and serving recommendations using AI'
+---
+
+## Overview
+
+The `/api/generatePlatingGuidance` endpoint generates professional plating and serving guidance for a recipe. It analyzes the recipe context to provide:
+
+- Specific, actionable plating suggestions
+- Ideal serving vessel recommendations
+- Optimal serving temperature
+- Proper storage instructions
+- Realistic shelf life estimates (fridge and freezer)
+
+## Request
+
+<ParamField body="recipeTitle" type="string" required>
+  The title of the recipe.
+  
+  Example: `"Gochujang Pasta"`, `"Chocolate Lava Cake"`
+</ParamField>
+
+<ParamField body="ingredients" type="array">
+  Full ingredient list of the recipe. Helps the AI understand what's in the dish.
+  
+  <Expandable title="Ingredients Array Structure">
+    Array of ingredient groups:
+    ```typescript
+    [
+      {
+        "groupName": "For the sauce",
+        "ingredients": [
+          {
+            "amount": "2",
+            "units": "tablespoons",
+            "ingredient": "gochujang"
+          }
+        ]
+      }
+    ]
+    ```
+  </Expandable>
+</ParamField>
+
+<ParamField body="instructions" type="array">
+  Full cooking instructions. Helps the AI understand how the dish is prepared.
+  
+  Example: `["Heat butter in a pan", "Add gochujang and cream", "Toss with pasta"]`
+</ParamField>
+
+## Response
+
+### Success Response
+
+<ResponseField name="success" type="boolean" required>
+  Always `true` for successful responses
+</ResponseField>
+
+<ResponseField name="data" type="object" required>
+  Plating and serving guidance data
+  
+  <Expandable title="Guidance Data Structure">
+    <ResponseField name="platingNotes" type="string">
+      2-3 sentences with specific, actionable plating suggestions. Includes placement tips, garnish recommendations, and presentation techniques.
+    </ResponseField>
+    
+    <ResponseField name="servingVessel" type="string">
+      The ideal serving vessel for the dish.
+      
+      Examples: `"shallow bowl"`, `"dinner plate"`, `"small ramekin"`, `"wide pasta bowl"`
+    </ResponseField>
+    
+    <ResponseField name="servingTemp" type="string">
+      Ideal serving temperature.
+      
+      Options: `"hot"`, `"warm"`, `"room temperature"`, `"chilled"`, `"cold"`
+    </ResponseField>
+    
+    <ResponseField name="storageGuide" type="string">
+      2-3 sentences on how to store leftovers properly. Includes container recommendations and reheating tips.
+    </ResponseField>
+    
+    <ResponseField name="shelfLife" type="object">
+      Realistic shelf life estimates
+      
+      <Expandable title="Shelf Life Object">
+        <ResponseField name="fridge" type="number">
+          Number of days the dish keeps in the refrigerator
+        </ResponseField>
+        
+        <ResponseField name="freezer" type="number | null">
+          Number of days the dish keeps in the freezer. `null` if the dish is not freezer-friendly.
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### Error Response
+
+<ResponseField name="error" type="string">
+  Error message describing what went wrong
+</ResponseField>
+
+<ResponseField name="details" type="string">
+  Additional error details (if available)
+</ResponseField>
+
+## Examples
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://your-domain.com/api/generatePlatingGuidance \
+  -H "Content-Type: application/json" \
+  -d '{
+    "recipeTitle": "Gochujang Pasta",
+    "ingredients": [
+      {
+        "groupName": "For the sauce",
+        "ingredients": [
+          {"amount": "2", "units": "tablespoons", "ingredient": "gochujang"},
+          {"amount": "1/2", "units": "cup", "ingredient": "heavy cream"},
+          {"amount": "2", "units": "tablespoons", "ingredient": "butter"}
+        ]
+      },
+      {
+        "groupName": "Main ingredients",
+        "ingredients": [
+          {"amount": "8", "units": "ounces", "ingredient": "pasta"}
+        ]
+      }
+    ],
+    "instructions": [
+      "Cook pasta according to package directions.",
+      "Heat butter in a pan, add gochujang and cream.",
+      "Toss pasta with sauce and serve."
+    ]
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch('/api/generatePlatingGuidance', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    recipeTitle: 'Gochujang Pasta',
+    ingredients: [
+      {
+        groupName: 'For the sauce',
+        ingredients: [
+          { amount: '2', units: 'tablespoons', ingredient: 'gochujang' },
+          { amount: '1/2', units: 'cup', ingredient: 'heavy cream' }
+        ]
+      }
+    ],
+    instructions: [
+      'Cook pasta according to package directions.',
+      'Heat butter in a pan, add gochujang and cream.',
+      'Toss pasta with sauce and serve.'
+    ]
+  })
+});
+
+const result = await response.json();
+
+if (result.success) {
+  const { platingNotes, servingVessel, servingTemp, storageGuide, shelfLife } = result.data;
+  
+  console.log('Plating:', platingNotes);
+  console.log('Serve in:', servingVessel);
+  console.log('Temperature:', servingTemp);
+  console.log('Storage:', storageGuide);
+  console.log('Keeps in fridge:', shelfLife.fridge, 'days');
+  console.log('Keeps in freezer:', shelfLife.freezer, 'days');
+} else {
+  console.error('Error:', result.error);
+}
+```
+
+```python Python
+import requests
+
+response = requests.post(
+    'https://your-domain.com/api/generatePlatingGuidance',
+    json={
+        'recipeTitle': 'Gochujang Pasta',
+        'ingredients': [
+            {
+                'groupName': 'For the sauce',
+                'ingredients': [
+                    {'amount': '2', 'units': 'tablespoons', 'ingredient': 'gochujang'},
+                    {'amount': '1/2', 'units': 'cup', 'ingredient': 'heavy cream'}
+                ]
+            }
+        ],
+        'instructions': [
+            'Cook pasta according to package directions.',
+            'Heat butter in a pan, add gochujang and cream.',
+            'Toss pasta with sauce and serve.'
+        ]
+    }
+)
+
+result = response.json()
+
+if result.get('success'):
+    data = result['data']
+    print(f"Plating: {data['platingNotes']}")
+    print(f"Serve in: {data['servingVessel']}")
+    print(f"Temperature: {data['servingTemp']}")
+    print(f"Storage: {data['storageGuide']}")
+    print(f"Fridge: {data['shelfLife']['fridge']} days")
+    print(f"Freezer: {data['shelfLife']['freezer']} days")
+else:
+    print(f"Error: {result.get('error')}")
+```
+
+</CodeGroup>
+
+### Success Response Example
+
+```json
+{
+  "success": true,
+  "data": {
+    "platingNotes": "Twirl pasta into a nest in the center of the bowl. Drizzle extra sauce around the edges and garnish with sliced green onions and a sprinkle of sesame seeds for visual contrast. A light dusting of grated parmesan adds richness.",
+    "servingVessel": "shallow pasta bowl",
+    "servingTemp": "hot",
+    "storageGuide": "Store in an airtight container in the refrigerator for up to 3 days. The sauce may thicken when cold. Reheat gently on the stovetop with a splash of water or cream to restore the creamy consistency. Not recommended for freezing as cream-based sauces can separate when thawed.",
+    "shelfLife": {
+      "fridge": 3,
+      "freezer": null
+    }
+  }
+}
+```
+
+### Error Response Example
+
+```json
+{
+  "error": "Recipe title is required"
+}
+```
+
+## AI Model
+
+This endpoint uses the `llama-3.3-70b-versatile` model via Groq with:
+- Temperature: 0.3 (lower temperature for more consistent, practical guidance)
+- Max tokens: 1024
+
+<Warning>
+  This endpoint requires a valid Groq API key configured as `GROQ_API_KEY` in your environment variables.
+</Warning>
+
+<Warning>
+  While only `recipeTitle` is required, providing full recipe context (`ingredients` and `instructions`) results in much more accurate and helpful plating guidance, storage instructions, and shelf life estimates.
+</Warning>
