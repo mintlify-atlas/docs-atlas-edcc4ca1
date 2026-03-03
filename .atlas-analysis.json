@@ -1,0 +1,134 @@
+{
+  "projectType": "saas",
+  "projectName": "Mizen",
+  "projectDescription": "A cooking companion that transforms any recipe into a guided Prep → Cook → Plate experience",
+  "theme": "almond",
+  "primaryColor": "#E07A3F",
+  "lightColor": "#F4A261",
+  "darkColor": "#C65828",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart"
+            ]
+          },
+          {
+            "group": "Core Features",
+            "pages": [
+              "features/recipe-parsing",
+              "features/cook-mode",
+              "features/ingredient-scaling",
+              "features/timers",
+              "features/image-parsing"
+            ]
+          },
+          {
+            "group": "Using Mizen",
+            "pages": [
+              "guides/parsing-recipes",
+              "guides/cooking-workflow",
+              "guides/managing-recipes",
+              "guides/keyboard-shortcuts"
+            ]
+          },
+          {
+            "group": "Advanced",
+            "pages": [
+              "advanced/unit-conversion",
+              "advanced/ingredient-substitutions",
+              "advanced/plating-guidance"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "api/overview",
+              "api/authentication"
+            ]
+          },
+          {
+            "group": "Endpoints",
+            "pages": [
+              "api/parse-recipe",
+              "api/parse-recipe-from-image",
+              "api/parse-ingredients",
+              "api/parse-instructions",
+              "api/generate-substitutions",
+              "api/generate-plating-guidance"
+            ]
+          },
+          {
+            "group": "Utilities",
+            "pages": [
+              "api/url-validator",
+              "api/fetch-html",
+              "api/extract-images"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Development",
+        "groups": [
+          {
+            "group": "Setup",
+            "pages": [
+              "development/installation",
+              "development/environment-setup",
+              "development/docker"
+            ]
+          },
+          {
+            "group": "Architecture",
+            "pages": [
+              "development/architecture",
+              "development/tech-stack",
+              "development/error-handling"
+            ]
+          },
+          {
+            "group": "Contributing",
+            "pages": [
+              "development/contributing",
+              "development/code-style",
+              "development/changelog"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Parse recipes from any cooking website URL",
+    "Extract recipes from images using AI vision",
+    "Interactive Cook Mode with step-by-step guidance",
+    "Built-in timers for cooking steps",
+    "Ingredient scaling and unit conversion",
+    "AI-powered ingredient substitutions",
+    "Recipe bookmarking and management",
+    "Keyboard shortcuts for efficient navigation",
+    "Plating and storage guidance"
+  ],
+  "publicApiSurface": [
+    "POST /api/parseRecipe - Parse recipe from URL",
+    "POST /api/parseRecipeFromImage - Parse recipe from image",
+    "POST /api/parseIngredients - Parse ingredients with AI",
+    "POST /api/parseInstructions - Parse instructions with AI",
+    "POST /api/generateSubstitutions - Generate ingredient substitutions",
+    "POST /api/generatePlatingGuidance - Generate plating guidance",
+    "POST /api/urlValidator - Validate recipe URL",
+    "GET /api/fetchHtml - Fetch and clean HTML content",
+    "GET /api/extractImages - Extract images from recipe page"
+  ]
+}
